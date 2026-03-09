@@ -5,6 +5,23 @@ import AdvancedConfig from '../components/AdvancedConfig';
 import { DeviceConfig } from '../store/sessionStore';
 import { apiClient } from '../services/api';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+
+function getLaunchErrorMessage(error: unknown): string {
+  if (axios.isAxiosError(error)) {
+    const apiMessage = (error.response?.data as { error?: string; message?: string } | undefined)?.message
+      || (error.response?.data as { error?: string; message?: string } | undefined)?.error;
+    if (apiMessage) {
+      return apiMessage;
+    }
+    if (!error.response) {
+      return 'Cannot reach backend API. Verify VITE_API_URL or VITE_API_BASE_URL in Vercel environment variables.';
+    }
+    return `Launch failed (${error.response.status}). Please try again.`;
+  }
+
+  return 'Failed to launch device. Please try again.';
+}
 
 export default function Dashboard() {
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -40,7 +57,7 @@ export default function Dashboard() {
       navigate(`/session/${response.sessionId}`);
     } catch (error) {
       console.error('Failed to launch device:', error);
-      alert('Failed to launch device. Please try again.');
+      alert(getLaunchErrorMessage(error));
     } finally {
       setIsLaunching(false);
     }
@@ -53,7 +70,7 @@ export default function Dashboard() {
       navigate(`/session/${response.sessionId}`);
     } catch (error) {
       console.error('Failed to launch device:', error);
-      alert('Failed to launch device. Please try again.');
+      alert(getLaunchErrorMessage(error));
     } finally {
       setIsLaunching(false);
       setShowAdvanced(false);

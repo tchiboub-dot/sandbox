@@ -1,7 +1,22 @@
 import axios from 'axios';
 import { DeviceConfig, Session } from '../store/sessionStore';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+function resolveApiBaseUrl(): string {
+  const directApiUrl = import.meta.env.VITE_API_URL as string | undefined;
+  if (directApiUrl && directApiUrl.trim().length > 0) {
+    return directApiUrl;
+  }
+
+  const baseUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
+  if (baseUrl && baseUrl.trim().length > 0) {
+    const trimmed = baseUrl.replace(/\/+$/, '');
+    return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
+  }
+
+  return 'http://localhost:5000/api';
+}
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 const client = axios.create({
   baseURL: API_BASE_URL,
