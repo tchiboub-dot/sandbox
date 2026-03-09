@@ -11,6 +11,15 @@ import {
   Radio,
   CheckCircle2,
   Cpu,
+  ArrowRight,
+  Network,
+  MousePointer2,
+  TrendingUp,
+  Lock,
+  Server,
+  Clock3,
+  Zap,
+  Camera,
 } from 'lucide-react';
 import DeviceCard from '../components/DeviceCard';
 import AdvancedConfig from '../components/AdvancedConfig';
@@ -45,10 +54,18 @@ function getLaunchErrorMessage(error: unknown): string {
   return 'Unable to start the sandbox environment. Please try again or contact the administrator.';
 }
 
-const loadingSteps = [
-  'Starting Android device...',
-  'Preparing cloud environment...',
-  'Connecting to stream...',
+const androidLoadingSteps = [
+  'Starting Android VM',
+  'Provisioning cloud resources',
+  'Initializing streaming pipeline',
+  'Connecting to session',
+];
+
+const windowsLoadingSteps = [
+  'Starting Windows VM',
+  'Provisioning cloud resources',
+  'Initializing streaming pipeline',
+  'Connecting to session',
 ];
 
 export default function Dashboard() {
@@ -59,7 +76,13 @@ export default function Dashboard() {
   const [launchError, setLaunchError] = useState<string | null>(null);
   const [retryConfig, setRetryConfig] = useState<DeviceConfig | null>(null);
   const [backendStatus, setBackendStatus] = useState<'checking' | 'online' | 'offline'>('checking');
+  const [testUrl, setTestUrl] = useState('');
+  const [uptimeDisplay, setUptimeDisplay] = useState(0);
+  const [latencyDisplay, setLatencyDisplay] = useState(0);
+  const [gpuDisplay, setGpuDisplay] = useState(0);
+  const [nodesDisplay, setNodesDisplay] = useState(0);
   const navigate = useNavigate();
+  const loadingSteps = selectedDevice === 'windows' ? windowsLoadingSteps : androidLoadingSteps;
 
   useEffect(() => {
     if (!isLaunching) {
@@ -91,6 +114,28 @@ export default function Dashboard() {
       mounted = false;
       clearInterval(interval);
     };
+  }, []);
+
+  useEffect(() => {
+    const durationMs = 1800;
+    const tickMs = 40;
+    const totalTicks = durationMs / tickMs;
+    let currentTick = 0;
+
+    const timer = setInterval(() => {
+      currentTick += 1;
+      const progress = Math.min(currentTick / totalTicks, 1);
+      setUptimeDisplay(99.9 * progress);
+      setLatencyDisplay(120 * progress);
+      setGpuDisplay(100 * progress);
+      setNodesDisplay(Math.round(24 * progress));
+
+      if (progress >= 1) {
+        clearInterval(timer);
+      }
+    }, tickMs);
+
+    return () => clearInterval(timer);
   }, []);
 
   const androidPresets: DeviceConfig = {
@@ -127,6 +172,7 @@ export default function Dashboard() {
     setIsLaunching(true);
     setLaunchError(null);
     setRetryConfig(config);
+    setSelectedDevice(config.type);
 
     if (import.meta.env.DEV) {
       console.info('[CloudDeviceLab] Launch request:', config.type);
@@ -163,12 +209,32 @@ export default function Dashboard() {
     setShowAdvanced(false);
   };
 
+  const handleUrlLaunch = async (type: 'android' | 'windows') => {
+    const config = type === 'android' ? androidPresets : windowsPresets;
+    const rawUrl = testUrl.trim();
+    const normalizedUrl = rawUrl.length > 0 && !/^https?:\/\//i.test(rawUrl) ? `https://${rawUrl}` : rawUrl;
+
+    await launchSession({
+      ...config,
+      startUrl: normalizedUrl.length > 0 ? normalizedUrl : undefined,
+    });
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-8 sm:py-10 relative">
       <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_20%_10%,rgba(14,165,233,0.22),transparent_35%),radial-gradient(circle_at_80%_20%,rgba(56,189,248,0.16),transparent_30%)]"></div>
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-starfield"></div>
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-grid-animated"></div>
+      <div className="pointer-events-none absolute inset-0 -z-10 cloud-lines"></div>
+      <div className="pointer-events-none absolute -top-16 left-[8%] w-64 h-64 bg-cyan-400/20 rounded-full blur-[120px] animate-drift-slow"></div>
+      <div className="pointer-events-none absolute top-32 right-[10%] w-56 h-56 bg-blue-500/20 rounded-full blur-[120px] animate-drift-slower"></div>
 
       <div className="text-center mb-10 sm:mb-12 animate-fade-in">
-        <div className="mx-auto max-w-3xl rounded-3xl border border-white/10 bg-white/5 backdrop-blur-md p-5 sm:p-8 shadow-2xl">
+        <div className="mx-auto max-w-4xl rounded-3xl border border-white/10 bg-white/5 backdrop-blur-md p-5 sm:p-8 shadow-2xl relative overflow-hidden">
+          <div className="absolute inset-0 pointer-events-none hero-glow"></div>
+          <div className="absolute inset-0 pointer-events-none hero-particles"></div>
+          <div className="absolute -left-8 top-8 w-20 h-36 rounded-2xl border border-cyan-300/20 bg-cyan-400/5 animate-float-device"></div>
+          <div className="absolute -right-8 top-12 w-28 h-20 rounded-xl border border-blue-300/20 bg-blue-400/5 animate-float-device-delayed"></div>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4 sm:mb-5 leading-tight drop-shadow-[0_0_20px_rgba(56,189,248,0.35)]">
             Run Android and Windows Devices Directly in Your Browser
           </h1>
@@ -209,6 +275,16 @@ export default function Dashboard() {
                 ? 'Unavailable'
                 : 'Checking...'}
             </span>
+          </div>
+          <div className="mt-4 flex flex-wrap justify-center gap-2 text-xs sm:text-sm">
+            {['Secure Cloud Sandbox', 'No Installation Required', 'Real Device Simulation'].map((badge) => (
+              <span
+                key={badge}
+                className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/20 bg-emerald-400/10 px-3 py-1 text-emerald-200"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" /> {badge}
+              </span>
+            ))}
           </div>
         </div>
       </div>
@@ -252,6 +328,8 @@ export default function Dashboard() {
             'Developer tools',
           ]}
           badges={['Android 13', 'Chrome Browser', 'Mobile Testing', 'Developer Tools']}
+          statusBadges={['Available', 'Cloud Ready']}
+          averageStartTime="4-7 seconds"
           launchLabel="Launch Android Device"
           onQuickLaunch={() => handleQuickLaunch('android')}
           onAdvancedLaunch={() => {
@@ -274,6 +352,8 @@ export default function Dashboard() {
             'Developer tools',
           ]}
           badges={['Windows 11', 'Edge Browser', 'Desktop Testing', 'Developer Tools']}
+          statusBadges={['Available', 'Low Latency']}
+          averageStartTime="4-7 seconds"
           launchLabel="Launch Windows Machine"
           onQuickLaunch={() => handleQuickLaunch('windows')}
           onAdvancedLaunch={() => {
@@ -308,39 +388,91 @@ export default function Dashboard() {
         />
       )}
 
+      <section className="mb-12 sm:mb-14 card p-5 sm:p-7 border border-white/10 bg-white/5">
+        <div className="flex items-center gap-2 mb-3">
+          <Globe className="w-5 h-5 text-primary-300" />
+          <h2 className="text-xl sm:text-2xl font-bold text-white">Test URL in Sandbox</h2>
+        </div>
+        <p className="text-slate-300 text-sm sm:text-base mb-4">
+          Enter a URL and launch a cloud device to start validation immediately inside an isolated environment.
+        </p>
+        <div className="grid md:grid-cols-[1fr_auto_auto] gap-3">
+          <input
+            type="url"
+            value={testUrl}
+            onChange={(e) => setTestUrl(e.target.value)}
+            className="input"
+            placeholder="Enter URL to test (e.g. https://example.com)"
+          />
+          <button
+            onClick={() => handleUrlLaunch('android')}
+            disabled={isLaunching}
+            className="btn-primary"
+          >
+            Launch Android with URL
+          </button>
+          <button
+            onClick={() => handleUrlLaunch('windows')}
+            disabled={isLaunching}
+            className="btn-secondary"
+          >
+            Launch Windows with URL
+          </button>
+        </div>
+      </section>
+
       <section id="live-streaming" className="mb-12 sm:mb-14">
         <h2 className="text-2xl md:text-3xl font-bold text-white mb-5 sm:mb-6">Live Device Streaming</h2>
         <div className="grid md:grid-cols-2 gap-6">
           <div className="card p-5 border border-white/10 bg-white/5">
-            <div className="aspect-[9/16] max-h-80 rounded-xl border border-white/15 bg-slate-900 p-3 mx-auto w-44">
-              <div className="w-full h-full rounded-lg bg-gradient-to-b from-slate-800 to-slate-950 border border-primary-300/20"></div>
+            <div className="aspect-[9/16] max-h-80 rounded-xl border border-white/15 bg-slate-900 p-3 mx-auto w-44 relative overflow-hidden">
+              <div className="w-full h-full rounded-lg bg-gradient-to-b from-slate-800 to-slate-950 border border-primary-300/20 overflow-hidden relative">
+                <div className="h-6 border-b border-white/10 bg-slate-900/70"></div>
+                <div className="absolute top-10 left-2 right-2 bottom-2 rounded-md bg-slate-800/60">
+                  <div className="h-2 w-16 bg-cyan-300/40 rounded mt-2 ml-2 animate-pulse"></div>
+                  <div className="h-2 w-20 bg-slate-400/30 rounded mt-2 ml-2"></div>
+                  <div className="h-28 mt-3 mx-2 rounded bg-gradient-to-b from-slate-700/60 to-slate-900/80 animate-scroll-preview"></div>
+                </div>
+                <MousePointer2 className="w-4 h-4 text-cyan-300 absolute bottom-6 right-6 animate-touch-indicator" />
+              </div>
             </div>
-            <p className="text-slate-300 text-sm mt-4">Android stream preview with low-latency browser interaction and touch emulation.</p>
+            <p className="text-slate-300 text-sm mt-4">Android preview with loading website animation, touch indicator, and smooth browser scrolling.</p>
           </div>
           <div className="card p-5 border border-white/10 bg-white/5">
-            <div className="aspect-video rounded-xl border border-white/15 bg-slate-900 p-3">
-              <div className="w-full h-full rounded-lg bg-gradient-to-r from-slate-800 to-slate-950 border border-primary-300/20"></div>
+            <div className="aspect-video rounded-xl border border-white/15 bg-slate-900 p-3 relative overflow-hidden">
+              <div className="w-full h-full rounded-lg bg-gradient-to-r from-slate-800 to-slate-950 border border-primary-300/20 relative overflow-hidden">
+                <div className="h-8 border-b border-white/10 bg-slate-900/70"></div>
+                <div className="absolute top-11 left-3 w-28 h-20 rounded border border-slate-500/30 bg-slate-800/70 animate-window-pop"></div>
+                <div className="absolute top-16 right-4 w-40 h-20 rounded border border-cyan-400/20 bg-slate-900/70"></div>
+                <MousePointer2 className="w-4 h-4 text-cyan-300 absolute top-14 left-14 animate-pointer-drift" />
+              </div>
             </div>
-            <p className="text-slate-300 text-sm mt-4">Windows desktop stream preview for browser testing, workflows, and debugging sessions.</p>
+            <p className="text-slate-300 text-sm mt-4">Windows preview with animated cursor movement, app window opening, and developer-console style panes.</p>
           </div>
         </div>
+        <p className="text-slate-300 text-sm mt-4 inline-flex items-center gap-2">
+          <Radio className="w-4 h-4 text-cyan-300" /> Low-latency WebRTC streaming delivers device screens directly to your browser.
+        </p>
       </section>
 
       <section className="mb-12 sm:mb-14">
         <h2 className="text-2xl md:text-3xl font-bold text-white mb-5 sm:mb-6">How It Works</h2>
-        <div className="grid md:grid-cols-4 gap-4">
+        <div className="grid md:grid-cols-4 gap-4 relative">
           {[
             { title: 'Choose your device', icon: Smartphone },
             { title: 'Launch cloud session', icon: Play },
             { title: 'Test your website or application', icon: Globe },
             { title: 'End or reset session anytime', icon: RotateCcw },
           ].map((step, idx) => (
-            <div key={step.title} className="card p-5 border border-white/10 bg-white/5">
+            <div key={step.title} className="card p-5 border border-white/10 bg-white/5 relative">
               <div className="text-xs uppercase tracking-wider text-primary-300 mb-2">Step {idx + 1}</div>
               <div className="flex items-center gap-3">
                 <step.icon className="w-5 h-5 text-primary-300" />
                 <p className="text-slate-200 font-medium">{step.title}</p>
               </div>
+              {idx < 3 && (
+                <ArrowRight className="hidden md:block absolute -right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-cyan-300/80 animate-arrow-pulse" />
+              )}
             </div>
           ))}
         </div>
@@ -396,8 +528,54 @@ export default function Dashboard() {
         </div>
       </section>
 
+      <section className="mt-12 grid lg:grid-cols-4 gap-4">
+        {[ 
+          { label: '99.9% uptime', value: `${uptimeDisplay.toFixed(1)}%`, icon: Server },
+          { label: '<120 ms latency', value: `<${Math.max(1, Math.round(latencyDisplay))} ms`, icon: Clock3 },
+          { label: 'GPU accelerated streaming', value: `${Math.round(gpuDisplay)}%`, icon: TrendingUp },
+          { label: 'Global cloud nodes', value: `${nodesDisplay}+`, icon: Globe },
+        ].map((item) => (
+          <div key={item.label} className="card p-5 border border-white/10 bg-white/5">
+            <item.icon className="w-5 h-5 text-cyan-300 mb-2" />
+            <p className="text-2xl font-bold text-white">{item.value}</p>
+            <p className="text-sm text-slate-300 mt-1">{item.label}</p>
+          </div>
+        ))}
+      </section>
+
+      <section className="mt-12 card p-7 border border-white/10 bg-white/5">
+        <h2 className="text-2xl font-bold text-white mb-4">Sandbox Session Controls</h2>
+        <p className="text-slate-300 mb-4">Users control each virtual device in real time with direct operational actions.</p>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {[
+            { icon: RotateCcw, label: 'Restart Device' },
+            { icon: Wrench, label: 'Reset Device' },
+            { icon: Camera, label: 'Take Screenshot' },
+            { icon: ShieldCheck, label: 'End Session' },
+          ].map((action) => (
+            <div key={action.label} className="rounded-xl border border-white/10 bg-slate-950/70 p-4 hover:border-cyan-300/40 transition-colors">
+              <action.icon className="w-5 h-5 text-cyan-300 mb-2" />
+              <p className="text-slate-200 text-sm font-medium">{action.label}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <section className="mt-14 card p-7 border border-white/10 bg-white/5">
         <h2 className="text-2xl font-bold text-white mb-4">Secure Cloud Sandbox</h2>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+          {[
+            { icon: Network, title: 'Network Isolation' },
+            { icon: Server, title: 'Temporary VMs' },
+            { icon: Lock, title: 'Encrypted Streaming' },
+            { icon: RotateCcw, title: 'Auto Session Cleanup' },
+          ].map((security) => (
+            <div key={security.title} className="rounded-lg border border-cyan-300/20 px-3 py-2 bg-cyan-500/10 text-cyan-100 text-sm flex items-center gap-2 animate-soft-pulse">
+              <security.icon className="w-4 h-4" />
+              <span>{security.title}</span>
+            </div>
+          ))}
+        </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
           {[
             'fully isolated environments',
@@ -409,6 +587,22 @@ export default function Dashboard() {
             <div key={point} className="rounded-lg border border-white/10 px-3 py-2 bg-slate-900/70 text-slate-300 text-sm flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-primary-300" />
               <span>{point}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-12 card p-7 border border-white/10 bg-white/5">
+        <h2 className="text-2xl font-bold text-white mb-4">Why Use This Platform</h2>
+        <div className="grid md:grid-cols-2 gap-4">
+          {[
+            'Test websites on real environments',
+            'No emulator installation',
+            'Fast debugging workflow',
+            'Secure isolated sessions',
+          ].map((item) => (
+            <div key={item} className="rounded-xl border border-white/10 bg-slate-950/70 p-4 text-slate-200 inline-flex items-center gap-2">
+              <Zap className="w-4 h-4 text-cyan-300" /> {item}
             </div>
           ))}
         </div>

@@ -16,6 +16,7 @@ export interface DeviceConfig {
   locationCity?: string;
   latitude?: number;
   longitude?: number;
+  startUrl?: string;
 }
 
 export interface Session {

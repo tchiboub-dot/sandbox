@@ -6,6 +6,8 @@ interface DeviceCardProps {
   description: string;
   specs: string[];
   badges: string[];
+  statusBadges: string[];
+  averageStartTime: string;
   launchLabel: string;
   onQuickLaunch: () => void;
   onAdvancedLaunch: () => void;
@@ -18,6 +20,8 @@ export default function DeviceCard({
   description,
   specs,
   badges,
+  statusBadges,
+  averageStartTime,
   launchLabel,
   onQuickLaunch,
   onAdvancedLaunch,
@@ -26,7 +30,7 @@ export default function DeviceCard({
   const isAndroid = title.toLowerCase().includes('android');
 
   return (
-    <div className="card p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 animate-fade-in border border-white/10 hover:border-primary-400/60 hover:shadow-primary-500/20">
+    <div className="group card p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 animate-fade-in border border-white/10 hover:border-primary-400/60 hover:shadow-primary-500/20">
       <div className="rounded-xl border border-white/10 bg-gradient-to-br from-slate-800/80 to-slate-900/80 p-4 mb-5">
         <div className={`mx-auto ${isAndroid ? 'w-24 h-44 rounded-2xl' : 'w-48 h-32 rounded-lg'} border border-white/20 bg-slate-950 relative overflow-hidden`}>
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(14,165,233,0.25),transparent_40%)]"></div>
@@ -35,7 +39,13 @@ export default function DeviceCard({
             <span>{isAndroid ? '5G' : 'Online'}</span>
           </div>
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-3/4 h-2/3 rounded-md border border-primary-400/30 bg-slate-900/70"></div>
+            <div className="w-3/4 h-2/3 rounded-md border border-primary-400/30 bg-slate-900/70 overflow-hidden relative">
+              <div className="h-4 border-b border-white/10"></div>
+              <div className="p-2">
+                <div className="h-1.5 w-10 rounded bg-cyan-400/40 mb-1 animate-pulse"></div>
+                <div className={`h-1.5 rounded bg-slate-500/40 ${isAndroid ? 'w-12 animate-scroll-preview' : 'w-16 animate-window-pop'}`}></div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -58,6 +68,17 @@ export default function DeviceCard({
           </span>
         ))}
       </div>
+
+      <div className="mb-5 flex flex-wrap items-center gap-2">
+        {statusBadges.map((status) => (
+          <span key={status} className="inline-flex items-center gap-1 rounded-full border border-emerald-300/20 bg-emerald-400/10 px-2.5 py-1 text-xs text-emerald-200">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
+            {status}
+          </span>
+        ))}
+      </div>
+
+      <p className="text-xs text-cyan-200 mb-5">⚡ Average start time: {averageStartTime}</p>
 
       <div className="mb-6">
         <h3 className="font-semibold text-sm text-slate-300 mb-3">
@@ -85,7 +106,7 @@ export default function DeviceCard({
         <button
           onClick={onAdvancedLaunch}
           disabled={isLaunching}
-          className="btn-secondary flex items-center justify-center space-x-2 px-4"
+          className="btn-secondary flex items-center justify-center space-x-2 px-4 group-hover:translate-y-[-1px] transition-transform"
         >
           <Settings className="w-5 h-5" />
         </button>

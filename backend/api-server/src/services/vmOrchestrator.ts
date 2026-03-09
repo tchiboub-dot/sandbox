@@ -10,6 +10,7 @@ interface DeviceConfig {
   cpu: string;
   language: string;
   sessionDuration: number;
+  startUrl?: string;
 }
 
 export class VMOrchestrator {
@@ -74,6 +75,7 @@ export class VMOrchestrator {
         ram: config.ram,
         cpu: config.cpu,
         language: config.language,
+        startUrl: config.startUrl,
       });
 
       return {
@@ -99,6 +101,7 @@ export class VMOrchestrator {
         ram: config.ram,
         cpu: config.cpu,
         language: config.language,
+        startUrl: config.startUrl,
       });
 
       return {

@@ -1,4 +1,4 @@
-import { Copyright, Github, LifeBuoy, BookOpenText, Code2 } from 'lucide-react';
+import { Copyright, Github, LifeBuoy, BookOpenText, Code2, Activity } from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -25,6 +25,9 @@ export default function Footer() {
             </a>
             <a href="https://github.com/tchiboub-dot/sandbox" target="_blank" rel="noreferrer" className="text-slate-300 hover:text-primary-300 transition-colors inline-flex items-center gap-2">
               <Github className="w-4 h-4" /> GitHub
+            </a>
+            <a href="#" className="text-slate-300 hover:text-primary-300 transition-colors inline-flex items-center gap-2">
+              <Activity className="w-4 h-4" /> System Status
             </a>
           </div>
         </div>

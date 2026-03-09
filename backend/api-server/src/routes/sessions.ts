@@ -19,6 +19,7 @@ const deviceConfigSchema = Joi.object({
   language: Joi.string().required(),
   sessionDuration: Joi.number().min(15).max(240).required(),
   networkSpeed: Joi.string().optional(),
+  startUrl: Joi.string().uri().optional(),
 });
 
 // Create new session

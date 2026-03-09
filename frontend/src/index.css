@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -12,7 +14,7 @@
     background: linear-gradient(180deg, #0f172a 0%, #020617 100%);
     min-height: 100vh;
     position: relative;
-    font-family: "Segoe UI", "Inter", system-ui, -apple-system, sans-serif;
+    font-family: "Space Grotesk", "Segoe UI", system-ui, -apple-system, sans-serif;
   }
 
   body::before {
@@ -41,15 +43,15 @@
 
 @layer components {
   .btn-primary {
-    @apply bg-primary-600 hover:bg-primary-500 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary-900/30 hover:shadow-primary-700/40;
+    @apply bg-primary-600 hover:bg-primary-500 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary-900/30 hover:shadow-primary-700/40 active:scale-[0.98];
   }
 
   .btn-secondary {
-    @apply bg-slate-800 hover:bg-slate-700 text-slate-100 font-semibold py-2 px-4 rounded-lg transition-colors duration-200 border border-white/10;
+    @apply bg-slate-800 hover:bg-slate-700 text-slate-100 font-semibold py-2 px-4 rounded-lg transition-all duration-200 border border-white/10 active:scale-[0.98];
   }
 
   .card {
-    @apply bg-slate-900/80 rounded-2xl shadow-xl border border-white/10 backdrop-blur-sm;
+    @apply bg-slate-900/80 rounded-2xl shadow-xl border border-white/10 backdrop-blur-sm transition-all duration-300;
   }
 
   .input {
@@ -127,4 +129,195 @@
 
 .animate-progress-slide {
   animation: progressSlide 2s ease-in-out infinite;
+}
+
+@keyframes twinkleDrift {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(-1.5%, -1%, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes gridSlide {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 0 40px;
+  }
+}
+
+@keyframes nodePulse {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@keyframes driftSlow {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(8px, -10px, 0);
+  }
+}
+
+@keyframes driftSlower {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(-10px, 8px, 0);
+  }
+}
+
+@keyframes floatDevice {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes arrowPulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: translate(0, -50%);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(3px, -50%);
+  }
+}
+
+@keyframes scrollPreview {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes pointerDrift {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(10px, 8px);
+  }
+}
+
+@keyframes touchPing {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.45;
+  }
+  100% {
+    transform: scale(1.2);
+    opacity: 0.95;
+  }
+}
+
+@keyframes windowPop {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.03);
+  }
+}
+
+.bg-starfield {
+  background-image:
+    radial-gradient(1px 1px at 12% 22%, rgba(226, 232, 240, 0.42), transparent 45%),
+    radial-gradient(1px 1px at 72% 34%, rgba(224, 242, 254, 0.35), transparent 45%),
+    radial-gradient(1px 1px at 48% 62%, rgba(186, 230, 253, 0.32), transparent 45%),
+    radial-gradient(1px 1px at 82% 78%, rgba(203, 213, 225, 0.28), transparent 45%);
+  animation: twinkleDrift 26s ease-in-out infinite;
+  opacity: 0.55;
+}
+
+.bg-grid-animated {
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.07) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: radial-gradient(circle at center, black 30%, transparent 90%);
+  animation: gridSlide 18s linear infinite;
+}
+
+.cloud-lines {
+  background:
+    radial-gradient(circle at 22% 42%, rgba(56, 189, 248, 0.22) 0 2px, transparent 3px),
+    radial-gradient(circle at 56% 58%, rgba(14, 165, 233, 0.22) 0 2px, transparent 3px),
+    linear-gradient(120deg, transparent 30%, rgba(56, 189, 248, 0.1) 50%, transparent 70%);
+  animation: nodePulse 12s ease-in-out infinite;
+}
+
+.hero-glow {
+  background: radial-gradient(circle at 50% 20%, rgba(14, 165, 233, 0.26), transparent 55%);
+}
+
+.hero-particles {
+  background-image: radial-gradient(rgba(186, 230, 253, 0.35) 1px, transparent 1px);
+  background-size: 28px 28px;
+  opacity: 0.2;
+}
+
+.animate-drift-slow {
+  animation: driftSlow 14s ease-in-out infinite;
+}
+
+.animate-drift-slower {
+  animation: driftSlower 18s ease-in-out infinite;
+}
+
+.animate-float-device {
+  animation: floatDevice 8s ease-in-out infinite;
+}
+
+.animate-float-device-delayed {
+  animation: floatDevice 9s ease-in-out 1.6s infinite;
+}
+
+.animate-arrow-pulse {
+  animation: arrowPulse 2.2s ease-in-out infinite;
+}
+
+.animate-scroll-preview {
+  animation: scrollPreview 3.2s ease-in-out infinite;
+}
+
+.animate-pointer-drift {
+  animation: pointerDrift 2.8s ease-in-out infinite;
+}
+
+.animate-touch-indicator {
+  animation: touchPing 1.4s ease-in-out infinite alternate;
+}
+
+.animate-window-pop {
+  animation: windowPop 3s ease-in-out infinite;
+}
+
+.animate-soft-pulse {
+  animation: nodePulse 2.4s ease-in-out infinite;
 }
