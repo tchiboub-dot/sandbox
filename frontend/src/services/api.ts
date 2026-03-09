@@ -1,35 +1,51 @@
 import axios from 'axios';
 import { DeviceConfig, Session } from '../store/sessionStore';
-
-function resolveApiBaseUrl(): string {
-  const directApiUrl = import.meta.env.VITE_API_URL as string | undefined;
-  if (directApiUrl && directApiUrl.trim().length > 0) {
-    return directApiUrl;
-  }
-
-  const baseUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
-  if (baseUrl && baseUrl.trim().length > 0) {
-    const trimmed = baseUrl.replace(/\/+$/, '');
-    return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
-  }
-
-  return 'http://localhost:5000/api';
-}
-
-const API_BASE_URL = resolveApiBaseUrl();
+import { API_BASE_URL, API_TIMEOUT_MS, isDevMode } from '../config/api';
 
 const client = axios.create({
   baseURL: API_BASE_URL,
+  timeout: API_TIMEOUT_MS,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
+if (isDevMode()) {
+  client.interceptors.request.use((config) => {
+    console.info('[CloudDeviceLab] API request:', config.method?.toUpperCase(), `${config.baseURL}${config.url}`);
+    return config;
+  });
+
+  client.interceptors.response.use(
+    (response) => {
+      console.info('[CloudDeviceLab] API response:', response.status, response.config.url);
+      return response;
+    },
+    (error) => {
+      console.error('[CloudDeviceLab] API error:', error?.message || error);
+      return Promise.reject(error);
+    }
+  );
+}
+
+function ensureSessionIdResponse(data: unknown): { sessionId: string } {
+  if (!data || typeof data !== 'object' || !('sessionId' in data)) {
+    throw new Error('Invalid API response while creating session');
+  }
+
+  const response = data as { sessionId?: unknown };
+  if (typeof response.sessionId !== 'string' || response.sessionId.length === 0) {
+    throw new Error('Invalid session identifier returned by API');
+  }
+
+  return { sessionId: response.sessionId };
+}
+
 export const apiClient = {
   // Session Management
   async createSession(config: DeviceConfig): Promise<{ sessionId: string }> {
     const response = await client.post('/sessions', config);
-    return response.data;
+    return ensureSessionIdResponse(response.data);
   },
 
   async getSession(sessionId: string): Promise<Session> {

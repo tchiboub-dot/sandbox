@@ -27,12 +27,22 @@ function getLaunchErrorMessage(error: unknown): string {
       return apiMessage;
     }
     if (!error.response) {
-      return 'Cannot reach backend API. Verify VITE_API_URL or VITE_API_BASE_URL in Vercel environment variables.';
+      return 'Backend service unavailable. Please check configuration or try again later.';
     }
-    return `Launch failed (${error.response.status}). Please try again.`;
+    if (error.code === 'ECONNABORTED') {
+      return 'Sandbox launch timed out. Please retry in a few seconds.';
+    }
+    if (error.response.status === 0 || error.message.toLowerCase().includes('cors')) {
+      return 'Unable to start the sandbox environment due to access policy. Please contact the administrator.';
+    }
+    return 'Unable to start the sandbox environment. Please try again or contact the administrator.';
   }
 
-  return 'Failed to launch device. Please try again.';
+  const message = error instanceof Error ? error.message : '';
+  if (message.toLowerCase().includes('invalid api response')) {
+    return 'Unable to start the sandbox environment due to invalid backend response.';
+  }
+  return 'Unable to start the sandbox environment. Please try again or contact the administrator.';
 }
 
 const loadingSteps = [
@@ -46,6 +56,8 @@ export default function Dashboard() {
   const [isLaunching, setIsLaunching] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState<'android' | 'windows' | null>(null);
   const [loadingStepIndex, setLoadingStepIndex] = useState(0);
+  const [launchError, setLaunchError] = useState<string | null>(null);
+  const [retryConfig, setRetryConfig] = useState<DeviceConfig | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -91,32 +103,30 @@ export default function Dashboard() {
     resetSandboxState: true,
   };
 
-  const handleQuickLaunch = async (type: 'android' | 'windows') => {
+  const launchSession = async (config: DeviceConfig) => {
     setIsLaunching(true);
+    setLaunchError(null);
+    setRetryConfig(config);
+
     try {
-      const config = type === 'android' ? androidPresets : windowsPresets;
       const response = await apiClient.createSession(config);
       navigate(`/session/${response.sessionId}`);
     } catch (error) {
       console.error('Failed to launch device:', error);
-      alert(getLaunchErrorMessage(error));
+      setLaunchError(getLaunchErrorMessage(error));
     } finally {
       setIsLaunching(false);
     }
   };
 
+  const handleQuickLaunch = async (type: 'android' | 'windows') => {
+    const config = type === 'android' ? androidPresets : windowsPresets;
+    await launchSession(config);
+  };
+
   const handleAdvancedLaunch = async (config: DeviceConfig) => {
-    setIsLaunching(true);
-    try {
-      const response = await apiClient.createSession(config);
-      navigate(`/session/${response.sessionId}`);
-    } catch (error) {
-      console.error('Failed to launch device:', error);
-      alert(getLaunchErrorMessage(error));
-    } finally {
-      setIsLaunching(false);
-      setShowAdvanced(false);
-    }
+    await launchSession(config);
+    setShowAdvanced(false);
   };
 
   return (
@@ -149,6 +159,31 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {launchError && (
+        <div className="mb-8 rounded-xl border border-red-400/40 bg-red-950/40 p-4 sm:p-5 shadow-lg">
+          <p className="text-red-200 font-medium">{launchError}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              onClick={() => {
+                if (retryConfig) {
+                  launchSession(retryConfig);
+                }
+              }}
+              className="btn-primary"
+              disabled={isLaunching || !retryConfig}
+            >
+              Retry
+            </button>
+            <button
+              onClick={() => setLaunchError(null)}
+              className="btn-secondary"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="grid md:grid-cols-2 gap-5 sm:gap-8 mb-8">
         <DeviceCard

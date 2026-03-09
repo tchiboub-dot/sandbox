@@ -193,6 +193,34 @@ cd backend && npm run dev:all
 
 ## 🌐 Deployment
 
+### Frontend API Configuration (Vercel)
+
+The frontend uses this API base URL priority in production and development:
+
+1. `VITE_API_URL`
+2. `VITE_API_BASE_URL`
+3. fallback to `/api`
+
+Examples:
+
+- External backend deployment:
+      - `VITE_API_URL=https://backend-domain.com/api`
+      - `VITE_SIGNALING_URL=https://backend-domain.com`
+
+- Same-domain deployment (frontend and backend under same host):
+      - No API URL variable required (frontend falls back to `/api`)
+      - Optional `VITE_SIGNALING_URL` for custom signaling host
+
+Required Vercel environment variables (external backend):
+
+- `VITE_API_URL` or `VITE_API_BASE_URL`
+- `VITE_SIGNALING_URL`
+
+Backend CORS must allow your Vercel domain, e.g.:
+
+- `https://sandbox-app-six.vercel.app`
+- and Vercel previews when `CORS_ALLOW_VERCEL_PREVIEWS=true`
+
 ### Production Deployment
 
 ```bash

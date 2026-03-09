@@ -1,6 +1,11 @@
 import io, { Socket } from 'socket.io-client';
 
-const SIGNALING_SERVER_URL = import.meta.env.VITE_SIGNALING_URL || 'http://localhost:5001';
+const SIGNALING_SERVER_URL = (import.meta.env.VITE_SIGNALING_URL as string | undefined)?.trim()
+  || (import.meta.env.DEV ? 'http://localhost:5001' : window.location.origin);
+
+if (import.meta.env.DEV) {
+  console.info('[CloudDeviceLab] SIGNALING_SERVER_URL:', SIGNALING_SERVER_URL);
+}
 
 class WebRTCService {
   private socket: Socket | null = null;

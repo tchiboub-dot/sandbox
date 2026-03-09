@@ -48,7 +48,7 @@ const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
     origin: buildCorsOriginValidator(),
-    methods: ['GET', 'POST'],
+    methods: ['GET', 'POST', 'OPTIONS'],
   },
   transports: ['websocket', 'polling'],
 });

@@ -56,6 +56,7 @@ app.use(helmet());
 app.use(cors({
   origin: buildCorsOriginValidator(),
   credentials: true,
+  methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'DELETE'],
 }));
 app.use(express.json());
 
