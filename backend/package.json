@@ -1,0 +1,28 @@
+{
+  "name": "cloud-device-lab-backend",
+  "version": "1.0.0",
+  "description": "Backend services for Cloud Device Lab platform",
+  "private": true,
+  "workspaces": [
+    "api-server",
+    "session-manager",
+    "vm-orchestrator",
+    "signaling-server"
+  ],
+  "scripts": {
+    "dev:all": "concurrently \"npm run dev --workspace=api-server\" \"npm run dev --workspace=signaling-server\"",
+    "build:all": "npm run build --workspaces",
+    "start:all": "concurrently \"npm start --workspace=api-server\" \"npm start --workspace=signaling-server\"",
+    "lint": "eslint . --ext .ts",
+    "test": "jest"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.19",
+    "@typescript-eslint/eslint-plugin": "^7.0.2",
+    "@typescript-eslint/parser": "^7.0.2",
+    "concurrently": "^8.2.2",
+    "eslint": "^8.56.0",
+    "jest": "^29.7.0",
+    "typescript": "^5.3.3"
+  }
+}

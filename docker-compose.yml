@@ -1,0 +1,180 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: cdl-postgres
+    environment:
+      POSTGRES_DB: cloud_device_lab
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - cdl-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: cdl-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - cdl-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # API Server
+  api-server:
+    build:
+      context: ./backend/api-server
+      dockerfile: Dockerfile
+    container_name: cdl-api-server
+    environment:
+      - NODE_ENV=development
+      - PORT=5000
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=cloud_device_lab
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - REDIS_URL=redis://redis:6379
+      - CORS_ORIGIN=http://localhost:3000
+      - VM_HOST_POOL=vm-host-android:8080,vm-host-windows:8080
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "5000:5000"
+    networks:
+      - cdl-network
+    volumes:
+      - ./backend/api-server:/app
+      - /app/node_modules
+    restart: unless-stopped
+
+  # Signaling Server (WebRTC)
+  signaling-server:
+    build:
+      context: ./backend/signaling-server
+      dockerfile: Dockerfile
+    container_name: cdl-signaling-server
+    environment:
+      - NODE_ENV=development
+      - PORT=5001
+      - CORS_ORIGIN=http://localhost:3000
+      - API_URL=http://api-server:5000
+      - VM_HOST_POOL=vm-host-android:8080,vm-host-windows:8080
+    depends_on:
+      - api-server
+    ports:
+      - "5001:5001"
+    networks:
+      - cdl-network
+    volumes:
+      - ./backend/signaling-server:/app
+      - /app/node_modules
+    restart: unless-stopped
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: cdl-frontend
+    environment:
+      - VITE_API_URL=http://localhost:5000/api
+      - VITE_SIGNALING_URL=http://localhost:5001
+    ports:
+      - "3000:3000"
+    networks:
+      - cdl-network
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - api-server
+      - signaling-server
+    restart: unless-stopped
+
+  # Android VM Host (commented out - requires KVM)
+  # vm-host-android:
+  #   build:
+  #     context: ./vm-images/android
+  #     dockerfile: Dockerfile
+  #   container_name: cdl-vm-host-android
+  #   privileged: true
+  #   devices:
+  #     - /dev/kvm
+  #   environment:
+  #     - PORT=8080
+  #     - MAX_EMULATORS=5
+  #   ports:
+  #     - "8080:8080"
+  #     - "5554-5584:5554-5584"
+  #   networks:
+  #     - cdl-network
+  #   volumes:
+  #     - android-avd:/root/.android
+  #   restart: unless-stopped
+
+  # Prometheus (Monitoring)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: cdl-prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    volumes:
+      - ./infrastructure/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - cdl-network
+    restart: unless-stopped
+
+  # Grafana (Visualization)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: cdl-grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./infrastructure/monitoring/grafana-dashboards:/etc/grafana/provisioning/dashboards
+    ports:
+      - "3001:3000"
+    networks:
+      - cdl-network
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+networks:
+  cdl-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  redis-data:
+  android-avd:
+  prometheus-data:
+  grafana-data:

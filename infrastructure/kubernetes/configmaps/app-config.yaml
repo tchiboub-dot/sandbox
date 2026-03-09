@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: cloud-device-lab
+data:
+  frontend-url: "https://clouddevicelab.com"
+  api-url: "https://api.clouddevicelab.com"
+  signaling-url: "wss://signaling.clouddevicelab.com"
+  max-session-duration: "240"
+  default-session-duration: "60"
