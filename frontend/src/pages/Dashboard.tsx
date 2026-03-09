@@ -120,15 +120,15 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 relative">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-8 sm:py-10 relative">
       <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_20%_10%,rgba(14,165,233,0.22),transparent_35%),radial-gradient(circle_at_80%_20%,rgba(56,189,248,0.16),transparent_30%)]"></div>
 
-      <div className="text-center mb-12 animate-fade-in">
-        <div className="mx-auto max-w-3xl rounded-3xl border border-white/10 bg-white/5 backdrop-blur-md p-8 shadow-2xl">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-5 leading-tight drop-shadow-[0_0_20px_rgba(56,189,248,0.35)]">
+      <div className="text-center mb-10 sm:mb-12 animate-fade-in">
+        <div className="mx-auto max-w-3xl rounded-3xl border border-white/10 bg-white/5 backdrop-blur-md p-5 sm:p-8 shadow-2xl">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4 sm:mb-5 leading-tight drop-shadow-[0_0_20px_rgba(56,189,248,0.35)]">
             Run Android and Windows Devices Directly in Your Browser
           </h1>
-          <p className="text-lg text-slate-300 max-w-2xl mx-auto mb-8">
+          <p className="text-base sm:text-lg text-slate-300 max-w-2xl mx-auto mb-6 sm:mb-8">
             Instantly launch real cloud devices to test websites, debug applications, and browse safely
             inside isolated environments.
           </p>
@@ -150,7 +150,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-8 mb-8">
+      <div className="grid md:grid-cols-2 gap-5 sm:gap-8 mb-8">
         <DeviceCard
           icon={<Smartphone className="w-10 h-10" />}
           title="Android Virtual Device"
@@ -197,7 +197,7 @@ export default function Dashboard() {
       </div>
 
       {!showAdvanced && (
-        <div className="text-center mb-12">
+        <div className="text-center mb-10 sm:mb-12">
           <button
             onClick={() => setShowAdvanced(true)}
             className="inline-flex items-center space-x-2 text-primary-300 hover:text-primary-200 font-medium transition-colors"
@@ -220,8 +220,8 @@ export default function Dashboard() {
         />
       )}
 
-      <section id="live-streaming" className="mb-14">
-        <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">Live Device Streaming</h2>
+      <section id="live-streaming" className="mb-12 sm:mb-14">
+        <h2 className="text-2xl md:text-3xl font-bold text-white mb-5 sm:mb-6">Live Device Streaming</h2>
         <div className="grid md:grid-cols-2 gap-6">
           <div className="card p-5 border border-white/10 bg-white/5">
             <div className="aspect-[9/16] max-h-80 rounded-xl border border-white/15 bg-slate-900 p-3 mx-auto w-44">
@@ -238,8 +238,8 @@ export default function Dashboard() {
         </div>
       </section>
 
-      <section className="mb-14">
-        <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">How It Works</h2>
+      <section className="mb-12 sm:mb-14">
+        <h2 className="text-2xl md:text-3xl font-bold text-white mb-5 sm:mb-6">How It Works</h2>
         <div className="grid md:grid-cols-4 gap-4">
           {[
             { title: 'Choose your device', icon: Smartphone },
