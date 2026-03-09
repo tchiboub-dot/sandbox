@@ -108,11 +108,25 @@ export default function Dashboard() {
     setLaunchError(null);
     setRetryConfig(config);
 
+    if (import.meta.env.DEV) {
+      console.info('[CloudDeviceLab] Launch request:', config.type);
+    }
+
     try {
       const response = await apiClient.createSession(config);
+
+      if (import.meta.env.DEV) {
+        console.info('[CloudDeviceLab] Launch success:', config.type, 'sessionId=', response.sessionId);
+      }
+
       navigate(`/session/${response.sessionId}`);
     } catch (error) {
       console.error('Failed to launch device:', error);
+
+      if (import.meta.env.DEV) {
+        console.error('[CloudDeviceLab] Launch failure reason:', config.type, error);
+      }
+
       setLaunchError(getLaunchErrorMessage(error));
     } finally {
       setIsLaunching(false);
@@ -179,7 +193,7 @@ export default function Dashboard() {
               onClick={() => setLaunchError(null)}
               className="btn-secondary"
             >
-              Dismiss
+              Cancel
             </button>
           </div>
         </div>

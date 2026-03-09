@@ -44,7 +44,16 @@ function ensureSessionIdResponse(data: unknown): { sessionId: string } {
 export const apiClient = {
   // Session Management
   async createSession(config: DeviceConfig): Promise<{ sessionId: string }> {
+    if (isDevMode()) {
+      console.info('[CloudDeviceLab] Launch endpoint:', `${API_BASE_URL}/sessions`, 'deviceType=', config.type);
+    }
+
     const response = await client.post('/sessions', config);
+
+    if (isDevMode()) {
+      console.info('[CloudDeviceLab] Launch response status:', response.status, 'deviceType=', config.type);
+    }
+
     return ensureSessionIdResponse(response.data);
   },
 
