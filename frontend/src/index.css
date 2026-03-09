@@ -3,34 +3,65 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    color-scheme: dark;
+  }
+
   body {
-    @apply bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100;
+    @apply text-gray-100;
+    background: linear-gradient(180deg, #0f172a 0%, #020617 100%);
+    min-height: 100vh;
+    position: relative;
+    font-family: "Segoe UI", "Inter", system-ui, -apple-system, sans-serif;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -2;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(56, 189, 248, 0.22), transparent 34%),
+      radial-gradient(circle at 85% 15%, rgba(14, 165, 233, 0.18), transparent 30%),
+      radial-gradient(circle at 50% 90%, rgba(37, 99, 235, 0.12), transparent 40%);
+  }
+
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    opacity: 0.4;
+    background-image: radial-gradient(rgba(148, 163, 184, 0.4) 0.5px, transparent 0.5px);
+    background-size: 40px 40px;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-primary-600 hover:bg-primary-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply bg-primary-600 hover:bg-primary-500 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary-900/30 hover:shadow-primary-700/40;
   }
 
   .btn-secondary {
-    @apply bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 font-semibold py-2 px-4 rounded-lg transition-colors duration-200;
+    @apply bg-slate-800 hover:bg-slate-700 text-slate-100 font-semibold py-2 px-4 rounded-lg transition-colors duration-200 border border-white/10;
   }
 
   .card {
-    @apply bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700;
+    @apply bg-slate-900/80 rounded-2xl shadow-xl border border-white/10 backdrop-blur-sm;
   }
 
   .input {
-    @apply w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all;
+    @apply w-full px-4 py-2 rounded-lg border border-white/15 bg-slate-900 text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all;
   }
 
   .select {
-    @apply w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all;
+    @apply w-full px-4 py-2 rounded-lg border border-white/15 bg-slate-900 text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all;
   }
 
   .label {
-    @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2;
+    @apply block text-sm font-medium text-slate-300 mb-2;
   }
 }
 
@@ -41,15 +72,15 @@
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-gray-100 dark:bg-gray-800;
+  @apply bg-slate-900;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+  @apply bg-slate-700 rounded-full;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-400 dark:bg-gray-500;
+  @apply bg-slate-500;
 }
 
 /* Loading animation */
@@ -77,4 +108,23 @@
 
 .animate-fade-in {
   animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes progressSlide {
+  0% {
+    width: 12%;
+    transform: translateX(-10%);
+  }
+  50% {
+    width: 65%;
+    transform: translateX(32%);
+  }
+  100% {
+    width: 12%;
+    transform: translateX(750%);
+  }
+}
+
+.animate-progress-slide {
+  animation: progressSlide 2s ease-in-out infinite;
 }

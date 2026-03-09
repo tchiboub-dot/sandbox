@@ -154,8 +154,7 @@ export default function DeviceSession() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
-      {/* Session Info Bar */}
-      <div className="bg-gray-800 border-b border-gray-700 px-4 py-3">
+      <div className="bg-slate-950/80 border-b border-white/10 px-4 py-3 backdrop-blur-md">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-6">
             <div>
@@ -184,27 +183,30 @@ export default function DeviceSession() {
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center flex-wrap gap-2">
             <button
               onClick={handleRestart}
-              className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+              className="px-3 py-2 hover:bg-slate-700 rounded-lg transition-colors border border-white/10 inline-flex items-center gap-2 text-sm"
               title="Restart Device"
             >
               <RefreshCw className="w-5 h-5" />
+              Restart Device
             </button>
             <button
               onClick={handleReset}
-              className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+              className="px-3 py-2 hover:bg-slate-700 rounded-lg transition-colors border border-white/10 inline-flex items-center gap-2 text-sm"
               title="Reset Environment"
             >
               <RefreshCw className="w-5 h-5" />
+              Reset Device
             </button>
             <button
               onClick={handleScreenshot}
-              className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+              className="px-3 py-2 hover:bg-slate-700 rounded-lg transition-colors border border-white/10 inline-flex items-center gap-2 text-sm"
               title="Take Screenshot"
             >
               <Camera className="w-5 h-5" />
+              Take Screenshot
             </button>
             <button
               onClick={() => setIsMuted(!isMuted)}
@@ -228,10 +230,11 @@ export default function DeviceSession() {
             </button>
             <button
               onClick={handleEndSession}
-              className="p-2 hover:bg-red-600 rounded-lg transition-colors"
+              className="px-3 py-2 hover:bg-red-600 rounded-lg transition-colors border border-red-400/50 inline-flex items-center gap-2 text-sm"
               title="End Session"
             >
               <Power className="w-5 h-5" />
+              End Session
             </button>
           </div>
         </div>
@@ -249,8 +252,9 @@ export default function DeviceSession() {
         ) : (
           <div className="text-center py-20">
             <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-600 mx-auto mb-4"></div>
-            <p className="text-gray-400">Starting virtual device...</p>
-            <p className="text-sm text-gray-500 mt-2">This may take 30-60 seconds</p>
+            <p className="text-gray-300">Starting Android device...</p>
+            <p className="text-sm text-gray-500 mt-2">Preparing cloud environment...</p>
+            <p className="text-sm text-gray-500 mt-1">Connecting to stream...</p>
           </div>
         )}
       </div>

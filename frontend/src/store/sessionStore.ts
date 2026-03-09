@@ -4,11 +4,18 @@ export interface DeviceConfig {
   type: 'android' | 'windows';
   version: string;
   screenResolution: string;
+  orientation?: 'portrait' | 'landscape';
+  deviceModel?: string;
   ram: string;
   cpu: string;
   language: string;
   sessionDuration: number;
   networkSpeed?: string;
+  performanceMode?: 'balanced' | 'high-performance' | 'battery-saver';
+  resetSandboxState?: boolean;
+  locationCity?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface Session {

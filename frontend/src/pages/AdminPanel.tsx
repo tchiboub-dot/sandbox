@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Activity, Server, Users, AlertTriangle, Database } from 'lucide-react';
+import { Activity, Server, Users, AlertTriangle, Database, ShieldAlert, MonitorSmartphone } from 'lucide-react';
 import { apiClient } from '../services/api';
 import { Session } from '../store/sessionStore';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -46,58 +46,79 @@ export default function AdminPanel() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
+      <h1 className="text-3xl font-bold mb-2 text-white">Admin Dashboard</h1>
+      <p className="text-slate-400 mb-8">Operational monitoring for cloud device sessions, performance, and security posture.</p>
 
       {/* Stats Overview */}
-      <div className="grid md:grid-cols-4 gap-6 mb-8">
-        <div className="card p-6">
+      <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+        <div className="card p-6 border border-white/10">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Active Sessions</p>
-              <p className="text-3xl font-bold mt-1">{stats?.activeSessions || 0}</p>
+              <p className="text-sm text-slate-400">Active Sessions</p>
+              <p className="text-3xl font-bold mt-1 text-white">{stats?.activeSessions || 0}</p>
             </div>
-            <Users className="w-10 h-10 text-primary-500" />
+            <Users className="w-10 h-10 text-primary-300" />
           </div>
         </div>
 
-        <div className="card p-6">
+        <div className="card p-6 border border-white/10">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">CPU Usage</p>
-              <p className="text-3xl font-bold mt-1">{stats?.cpuUsage || 0}%</p>
+              <p className="text-sm text-slate-400">Running Devices</p>
+              <p className="text-3xl font-bold mt-1 text-white">{activeSessions.filter((s) => s.status === 'running').length}</p>
             </div>
-            <Activity className="w-10 h-10 text-green-500" />
+            <MonitorSmartphone className="w-10 h-10 text-cyan-300" />
           </div>
         </div>
 
-        <div className="card p-6">
+        <div className="card p-6 border border-white/10">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Memory Usage</p>
-              <p className="text-3xl font-bold mt-1">{stats?.memoryUsage || 0}%</p>
+              <p className="text-sm text-slate-400">CPU Usage</p>
+              <p className="text-3xl font-bold mt-1 text-white">{stats?.cpuUsage || 0}%</p>
             </div>
-            <Database className="w-10 h-10 text-blue-500" />
+            <Activity className="w-10 h-10 text-emerald-300" />
           </div>
         </div>
 
-        <div className="card p-6">
+        <div className="card p-6 border border-white/10">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Available VMs</p>
-              <p className="text-3xl font-bold mt-1">{stats?.availableVMs || 0}</p>
+              <p className="text-sm text-slate-400">Server Load</p>
+              <p className="text-3xl font-bold mt-1 text-white">{stats?.memoryUsage || 0}%</p>
             </div>
-            <Server className="w-10 h-10 text-purple-500" />
+            <Database className="w-10 h-10 text-blue-300" />
+          </div>
+        </div>
+
+        <div className="card p-6 border border-white/10">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-slate-400">Session Logs</p>
+              <p className="text-3xl font-bold mt-1 text-white">{logs.length}</p>
+            </div>
+            <Server className="w-10 h-10 text-purple-300" />
+          </div>
+        </div>
+
+        <div className="card p-6 border border-white/10">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-slate-400">Security Alerts</p>
+              <p className="text-3xl font-bold mt-1 text-white">{stats?.alerts?.length || 0}</p>
+            </div>
+            <ShieldAlert className="w-10 h-10 text-red-300" />
           </div>
         </div>
       </div>
 
       {/* Charts */}
       <div className="grid md:grid-cols-2 gap-6 mb-8">
-        <div className="card p-6">
-          <h2 className="text-lg font-semibold mb-4">CPU Usage (Last Hour)</h2>
+        <div className="card p-6 border border-white/10">
+          <h2 className="text-lg font-semibold mb-4 text-white">CPU Usage (Last Hour)</h2>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={cpuData}>
-              <CartesianGrid strokeDasharray="3 3" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
               <XAxis dataKey="time" />
               <YAxis />
               <Tooltip />
@@ -106,11 +127,11 @@ export default function AdminPanel() {
           </ResponsiveContainer>
         </div>
 
-        <div className="card p-6">
-          <h2 className="text-lg font-semibold mb-4">Memory Usage (Last Hour)</h2>
+        <div className="card p-6 border border-white/10">
+          <h2 className="text-lg font-semibold mb-4 text-white">Memory Usage (Last Hour)</h2>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={memoryData}>
-              <CartesianGrid strokeDasharray="3 3" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
               <XAxis dataKey="time" />
               <YAxis />
               <Tooltip />
@@ -121,12 +142,12 @@ export default function AdminPanel() {
       </div>
 
       {/* Active Sessions */}
-      <div className="card p-6 mb-8">
-        <h2 className="text-lg font-semibold mb-4">Active Sessions</h2>
+      <div className="card p-6 mb-8 border border-white/10">
+        <h2 className="text-lg font-semibold mb-4 text-white">Active Sessions</h2>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700">
+              <tr className="border-b border-white/10 text-slate-300">
                 <th className="text-left py-3 px-4">Session ID</th>
                 <th className="text-left py-3 px-4">Device Type</th>
                 <th className="text-left py-3 px-4">Version</th>
@@ -137,7 +158,7 @@ export default function AdminPanel() {
             </thead>
             <tbody>
               {activeSessions.map((session) => (
-                <tr key={session.id} className="border-b border-gray-100 dark:border-gray-800">
+                <tr key={session.id} className="border-b border-white/5 text-slate-300">
                   <td className="py-3 px-4 font-mono text-sm">{session.id.substring(0, 8)}</td>
                   <td className="py-3 px-4 capitalize">{session.deviceConfig.type}</td>
                   <td className="py-3 px-4">{session.deviceConfig.version}</td>
@@ -163,33 +184,33 @@ export default function AdminPanel() {
             </tbody>
           </table>
           {activeSessions.length === 0 && (
-            <p className="text-center py-8 text-gray-500">No active sessions</p>
+            <p className="text-center py-8 text-slate-400">No active sessions</p>
           )}
         </div>
       </div>
 
       {/* System Logs */}
-      <div className="card p-6">
-        <h2 className="text-lg font-semibold mb-4">System Logs</h2>
+      <div className="card p-6 border border-white/10">
+        <h2 className="text-lg font-semibold mb-4 text-white">System Logs</h2>
         <div className="space-y-2 max-h-96 overflow-y-auto">
           {logs.map((log, index) => (
             <div
               key={index}
-              className="flex items-start space-x-3 text-sm p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded"
+              className="flex items-start space-x-3 text-sm p-2 hover:bg-slate-800/60 rounded"
             >
-              <span className="text-gray-500 font-mono">{log.timestamp}</span>
+              <span className="text-slate-500 font-mono">{log.timestamp}</span>
               <span
                 className={`font-medium ${
                   log.level === 'error'
                     ? 'text-red-500'
                     : log.level === 'warn'
                     ? 'text-yellow-500'
-                    : 'text-gray-600 dark:text-gray-400'
+                    : 'text-slate-400'
                 }`}
               >
                 [{log.level}]
               </span>
-              <span className="flex-1 text-gray-700 dark:text-gray-300">{log.message}</span>
+              <span className="flex-1 text-slate-300">{log.message}</span>
             </div>
           ))}
         </div>
@@ -197,10 +218,10 @@ export default function AdminPanel() {
 
       {/* Alerts Section */}
       {stats?.alerts && stats.alerts.length > 0 && (
-        <div className="card p-6 mt-8 border-l-4 border-red-500">
+        <div className="card p-6 mt-8 border border-red-400/40 bg-red-950/20">
           <div className="flex items-center space-x-2 mb-4">
             <AlertTriangle className="w-6 h-6 text-red-500" />
-            <h2 className="text-lg font-semibold">Active Alerts</h2>
+            <h2 className="text-lg font-semibold text-white">Active Alerts</h2>
           </div>
           <div className="space-y-2">
             {stats.alerts.map((alert: any, index: number) => (
