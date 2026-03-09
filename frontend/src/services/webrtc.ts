@@ -20,7 +20,7 @@ class WebRTCService {
     });
   }
 
-  async connect(sessionId: string, streamUrl: string): Promise<RTCPeerConnection> {
+  async connect(sessionId: string, _streamUrl: string): Promise<RTCPeerConnection> {
     if (!this.socket) {
       throw new Error('Socket not initialized');
     }

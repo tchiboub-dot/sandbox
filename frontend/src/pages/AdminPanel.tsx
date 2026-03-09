@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Activity, Server, Users, Clock, AlertTriangle, Database } from 'lucide-react';
+import { Activity, Server, Users, AlertTriangle, Database } from 'lucide-react';
 import { apiClient } from '../services/api';
 import { Session } from '../store/sessionStore';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
