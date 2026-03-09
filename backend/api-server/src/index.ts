@@ -15,10 +15,46 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 5000;
 
+function buildCorsOriginValidator() {
+  const configuredOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  const allowVercelPreviews = process.env.CORS_ALLOW_VERCEL_PREVIEWS === 'true';
+
+  return (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    // Allow non-browser tools and same-origin requests with no Origin header.
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+
+    if (configuredOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+
+    if (allowVercelPreviews) {
+      try {
+        const hostname = new URL(origin).hostname;
+        if (hostname.endsWith('.vercel.app')) {
+          callback(null, true);
+          return;
+        }
+      } catch {
+        // Fall through to deny invalid origin.
+      }
+    }
+
+    callback(new Error(`CORS blocked for origin: ${origin}`));
+  };
+}
+
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  origin: buildCorsOriginValidator(),
   credentials: true,
 }));
 app.use(express.json());
