@@ -15,6 +15,11 @@ export const API_BASE_URL = rawApiUrl
     ? normalizeBaseUrl(rawApiBaseUrl)
     : '/api';
 
+export const API_HEALTH_URL =
+  API_BASE_URL === '/api'
+    ? '/health'
+    : `${API_BASE_URL.replace(/\/api$/, '')}/health`;
+
 export const API_TIMEOUT_MS = 20000;
 
 export function isDevMode(): boolean {
@@ -23,4 +28,5 @@ export function isDevMode(): boolean {
 
 if (isDevMode()) {
   console.info('[CloudDeviceLab] API_BASE_URL:', API_BASE_URL);
+  console.info('[CloudDeviceLab] API_HEALTH_URL:', API_HEALTH_URL);
 }

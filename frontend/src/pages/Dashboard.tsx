@@ -58,6 +58,7 @@ export default function Dashboard() {
   const [loadingStepIndex, setLoadingStepIndex] = useState(0);
   const [launchError, setLaunchError] = useState<string | null>(null);
   const [retryConfig, setRetryConfig] = useState<DeviceConfig | null>(null);
+  const [backendStatus, setBackendStatus] = useState<'checking' | 'online' | 'offline'>('checking');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -72,6 +73,25 @@ export default function Dashboard() {
 
     return () => clearInterval(interval);
   }, [isLaunching]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const pollHealth = async () => {
+      const ok = await apiClient.checkBackendHealth();
+      if (mounted) {
+        setBackendStatus(ok ? 'online' : 'offline');
+      }
+    };
+
+    pollHealth();
+    const interval = setInterval(pollHealth, 30000);
+
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   const androidPresets: DeviceConfig = {
     type: 'android',
@@ -170,6 +190,25 @@ export default function Dashboard() {
             >
               Watch Demo
             </a>
+          </div>
+          <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-slate-900/70 px-3 py-1.5 text-xs sm:text-sm">
+            <span
+              className={`inline-block h-2 w-2 rounded-full ${
+                backendStatus === 'online'
+                  ? 'bg-emerald-400'
+                  : backendStatus === 'offline'
+                  ? 'bg-red-400'
+                  : 'bg-yellow-400'
+              }`}
+            ></span>
+            <span className="text-slate-300">
+              Backend Status:{' '}
+              {backendStatus === 'online'
+                ? 'Connected'
+                : backendStatus === 'offline'
+                ? 'Unavailable'
+                : 'Checking...'}
+            </span>
           </div>
         </div>
       </div>

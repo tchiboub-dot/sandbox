@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { DeviceConfig, Session } from '../store/sessionStore';
-import { API_BASE_URL, API_TIMEOUT_MS, isDevMode } from '../config/api';
+import { API_BASE_URL, API_HEALTH_URL, API_TIMEOUT_MS, isDevMode } from '../config/api';
 
 const client = axios.create({
   baseURL: API_BASE_URL,
@@ -42,6 +42,15 @@ function ensureSessionIdResponse(data: unknown): { sessionId: string } {
 }
 
 export const apiClient = {
+  async checkBackendHealth(): Promise<boolean> {
+    try {
+      const response = await axios.get(API_HEALTH_URL, { timeout: 8000 });
+      return response.status >= 200 && response.status < 300;
+    } catch {
+      return false;
+    }
+  },
+
   // Session Management
   async createSession(config: DeviceConfig): Promise<{ sessionId: string }> {
     if (isDevMode()) {
