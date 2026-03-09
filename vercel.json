@@ -1,21 +1,15 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
-  "name": "cloud-device-lab",
-  "buildCommand": "cd frontend && npm install && npm run build",
-  "outputDirectory": "frontend/dist",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
   "framework": "vite",
-  "installCommand": "cd frontend && npm install",
-  "devCommand": "cd frontend && npm run dev",
-  "regions": ["iad1"],
-  "routes": [
+  "installCommand": "npm install",
+  "devCommand": "npm run dev",
+  "rewrites": [
     {
-      "src": "/assets/(.*)",
-      "dest": "/assets/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ],
   "headers": [
@@ -28,10 +22,5 @@
         }
       ]
     }
-  ],
-  "env": {
-    "VITE_API_BASE_URL": "@vite_api_base_url",
-    "VITE_SIGNALING_URL": "@vite_signaling_url",
-    "VITE_STUN_SERVER": "@vite_stun_server"
-  }
+  ]
 }
