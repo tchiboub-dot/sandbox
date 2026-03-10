@@ -23,10 +23,11 @@ import {
 } from 'lucide-react';
 import DeviceCard from '../components/DeviceCard';
 import AdvancedConfig from '../components/AdvancedConfig';
+import BackendUnavailableBanner from '../components/BackendUnavailableBanner';
 import { DeviceConfig } from '../store/sessionStore';
 import { apiClient } from '../services/api';
 import { useNavigate } from 'react-router-dom';
-import { getDeploymentInfo } from '../config/api';
+import { getDeploymentInfo, API_BASE_URL } from '../config/api';
 
 function getLaunchErrorMessage(error: unknown): string {
   if (error instanceof Error) {
@@ -311,6 +312,14 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Show banner when backend is unavailable */}
+      {(backendStatus === 'offline' || backendStatus === 'misconfigured') && (
+        <BackendUnavailableBanner status={backendStatus} apiUrl={API_BASE_URL} />
+      )}
+
+      {/* Only show device cards when backend is online */}
+      {backendStatus === 'online' && (
+        <>
       <div className="grid md:grid-cols-2 gap-5 sm:gap-8 mb-8">
         <DeviceCard
           icon={<Smartphone className="w-10 h-10" />}
@@ -604,6 +613,10 @@ export default function Dashboard() {
           ))}
         </div>
       </section>
+
+      </>
+      )}
+      {/* End of conditional rendering for online backend */}
 
       {isLaunching && (
         <div className="fixed inset-0 bg-black/55 backdrop-blur-sm z-40 flex items-center justify-center p-4">
