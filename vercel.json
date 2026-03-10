@@ -6,6 +6,23 @@
   "framework": "vite",
   "installCommand": "npm install",
   "devCommand": "npm run dev",
+  "functions": {
+    "api/**/*.js": {
+      "runtime": "nodejs18.x"
+    }
+  },
+  "routes": [
+    {
+      "src": "/api/sandbox/launch",
+      "dest": "/api/sandbox/launch.js",
+      "methods": ["POST", "OPTIONS"]
+    },
+    {
+      "src": "/api/sandbox/session/(?<sessionId>[^/]+)",
+      "dest": "/api/sandbox/session.js?sessionId=$sessionId",
+      "methods": ["GET", "OPTIONS"]
+    }
+  ],
   "rewrites": [
     {
       "source": "/(.*)",
