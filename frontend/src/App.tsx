@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-route
 import { useThemeStore } from './store/themeStore';
 import Header from './components/Header';
 import Footer from './components/Footer';
+import { EnvironmentDebugger } from './hooks/useEnvironmentCheck';
 
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const DeviceSession = lazy(() => import('./pages/DeviceSession'));
@@ -32,6 +33,7 @@ function AppLayout() {
         </Routes>
       </Suspense>
       {showFooter && <Footer />}
+      <EnvironmentDebugger />
     </div>
   );
 }

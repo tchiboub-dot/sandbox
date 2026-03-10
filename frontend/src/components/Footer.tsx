@@ -1,6 +1,9 @@
-import { Copyright, Github, LifeBuoy, BookOpenText, Code2, Activity } from 'lucide-react';
+import { Copyright, Github, LifeBuoy, BookOpenText, Code2, Activity, Info } from 'lucide-react';
+import { BUILD_METADATA } from '../constants/buildMetadata';
 
 export default function Footer() {
+  const isDev = import.meta.env.DEV;
+  
   return (
     <footer className="mt-16 border-t border-white/10 bg-slate-950/70 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-10 sm:py-12">
@@ -11,6 +14,20 @@ export default function Footer() {
               A premium cloud testing platform to launch Android and Windows devices instantly for secure,
               isolated, and high-fidelity browser and application testing.
             </p>
+            {isDev && (
+              <div className="mt-4 p-2 bg-slate-900/50 rounded text-xs text-slate-400 border border-slate-700/50">
+                <div className="flex items-center gap-1 mb-1">
+                  <Info className="w-3 h-3" />
+                  <span className="font-semibold">Debug Info (Dev Only)</span>
+                </div>
+                <div className="space-y-0.5">
+                  <div>Version: <span className="text-slate-300">{BUILD_METADATA.version}</span></div>
+                  <div>Commit: <span className="text-slate-300">{BUILD_METADATA.commitHash}</span></div>
+                  <div>Built: <span className="text-slate-300">{BUILD_METADATA.buildTime}</span></div>
+                  <div>Environment: <span className="text-slate-300">{BUILD_METADATA.environment}</span></div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-sm">
