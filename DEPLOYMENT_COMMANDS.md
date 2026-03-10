@@ -54,10 +54,10 @@ git push -u origin main
 3. **Configure Project**:
    ```
    Framework Preset: Vite
-   Root Directory: ./ (leave default or select root)
-   Build Command: cd frontend && npm install && npm run build
+   Root Directory: .
+   Build Command: npm --workspace frontend run build
    Output Directory: frontend/dist
-   Install Command: cd frontend && npm install
+   Install Command: npm install
    ```
 
 4. **Add Environment Variables**:
@@ -100,9 +100,9 @@ vercel --prod
 - Project name: `sandbox` or `cloud-device-lab`
 - Directory: `./` (press Enter)
 - Override settings: `Y`
-  - Build Command: `cd frontend && npm install && npm run build`
+   - Build Command: `npm --workspace frontend run build`
   - Output Directory: `frontend/dist`
-  - Development Command: `cd frontend && npm run dev`
+   - Development Command: `npm --workspace frontend run dev`
 
 ---
 
@@ -120,7 +120,7 @@ vercel --prod
 #### Error: "Build Command failed"
 **Solution**: Ensure build command is:
 ```bash
-cd frontend && npm install && npm run build
+npm --workspace frontend run build
 ```
 
 #### Error: "ENOENT: no such file or directory"

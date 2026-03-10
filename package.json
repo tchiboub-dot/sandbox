@@ -4,11 +4,11 @@
   "private": true,
   "description": "Cloud Device Lab - Virtual device platform",
   "scripts": {
-    "dev": "cd frontend && npm run dev",
-    "build": "cd frontend && npm run build",
-    "preview": "cd frontend && npm run preview",
+    "dev": "npm --workspace frontend run dev",
+    "build": "npm --workspace frontend run build",
+    "preview": "npm --workspace frontend run preview",
     "install-all": "npm run install-frontend && npm run install-backend",
-    "install-frontend": "cd frontend && npm install",
+    "install-frontend": "npm install --workspace frontend",
     "install-backend": "cd backend/api-server && npm install && cd ../signaling-server && npm install"
   },
   "workspaces": [

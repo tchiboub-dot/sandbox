@@ -104,7 +104,7 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed production setup.
 npm install
 
 # Frontend only
-cd frontend && npm install
+npm install --workspace frontend
 
 # Backend only
 cd backend && npm install

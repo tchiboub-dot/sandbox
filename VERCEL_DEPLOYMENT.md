@@ -64,7 +64,7 @@ Follow [DEPLOYMENT.md](DEPLOYMENT.md) for complete Kubernetes setup.
 ```bash
 # Install dependencies
 npm install
-cd frontend && npm install
+npm install --workspace frontend
 
 # Start development server
 npm run dev
@@ -76,11 +76,10 @@ Access at http://localhost:3000
 
 ```bash
 # Build frontend
-cd frontend
-npm run build
+npm --workspace frontend run build
 
 # Preview production build
-npm run preview
+npm --workspace frontend run preview
 ```
 
 ## Vercel CLI Deployment

@@ -101,7 +101,8 @@ Examples:
    - Select: `tchiboub-dot/sandbox`
    - Framework: Vite (auto-detected)
 4. **Configure Build**:
-   - Build Command: `npm run build` (auto-detected)
+  - Root Directory: `.`
+  - Build Command: `npm --workspace frontend run build`
    - Output Directory: `frontend/dist`
    - Install Command: `npm install`
 5. **Set Environment Variables**:
