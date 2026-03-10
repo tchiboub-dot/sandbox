@@ -21,6 +21,10 @@
       "src": "/api/sandbox/session/(?<sessionId>[^/]+)",
       "dest": "/api/sandbox/session.js?sessionId=$sessionId",
       "methods": ["GET", "OPTIONS"]
+    },
+    {
+      "src": "/api/(.*)",
+      "status": 404
     }
   ],
   "rewrites": [
@@ -36,6 +40,15 @@
         {
           "key": "Cache-Control",
           "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/health",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
         }
       ]
     }

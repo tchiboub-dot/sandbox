@@ -1,13 +1,14 @@
 /**
- * React component for launching and managing Android emulator sessions
+ * React component for launching and managing device sessions
  */
 
 import React, { useState, useCallback } from 'react';
 import {
-  launchEmulator,
   pollSessionStatus,
   SessionStatus,
 } from '../services/sandboxService';
+import { apiClient } from '../services/api';
+import { DeviceConfig } from '../store/sessionStore';
 import '../styles/SandboxLauncher.css';
 
 interface LaunchState {
@@ -27,18 +28,31 @@ export const SandboxLauncher: React.FC = () => {
     timeRemaining: null,
   });
 
-  const handleLaunch = useCallback(async () => {
+  const handleLaunch = useCallback(async (deviceType: 'android' | 'windows' = 'android') => {
     setState({ isLoading: true, error: null, sessionId: null, sessionStatus: null, timeRemaining: null });
 
     try {
-      // Launch emulator
-      const launchResult = await launchEmulator({
-        emulatorName: 'default',
-        timeout: 300000,
-      });
+      // Create device config
+      const config: DeviceConfig = {
+        type: deviceType,
+        version: deviceType === 'android' ? '14.0' : '11',
+        screenResolution: deviceType === 'android' ? '1080x2400' : '1920x1080',
+        ram: deviceType === 'android' ? '4GB' : '8GB',
+        cpu: deviceType === 'android' ? '4 cores' : '4 cores',
+        language: 'English',
+        sessionDuration: 60,
+        orientation: deviceType === 'android' ? 'portrait' : 'landscape',
+        deviceModel: deviceType === 'android' ? 'Pixel 6' : 'Standard Desktop',
+        networkSpeed: '4G',
+        performanceMode: 'balanced',
+        resetSandboxState: true,
+      };
 
-      if (!launchResult.success) {
-        throw new Error('Failed to launch emulator');
+      // Launch device using unified API
+      const launchResult = await apiClient.createSession(config);
+
+      if (!launchResult.sessionId) {
+        throw new Error('Failed to launch: No session ID returned');
       }
 
       const { sessionId } = launchResult;
@@ -59,30 +73,24 @@ export const SandboxLauncher: React.FC = () => {
             clearInterval(countdownInterval);
             return prev;
           }
+
+          const nextTime = prev.timeRemaining - 1;
           return {
             ...prev,
-            timeRemaining: Math.max(0, prev.timeRemaining - 1),
+            timeRemaining: nextTime >= 0 ? nextTime : 0,
           };
         });
       }, 1000);
 
+      // Start polling (this will eventually complete or timeout)
       try {
-        const sessionStatus = await pollSessionStatus(sessionId, {
-          pollInterval: 15000, // 15 seconds
-          maxDuration: 300000, // 5 minutes
-          onStatusChange: (status) => {
-            setState((prev) => ({
-              ...prev,
-              sessionStatus: status,
-            }));
-          },
-        });
-
+        const finalStatus = await pollSessionStatus(sessionId);
         clearInterval(countdownInterval);
+        
         setState((prev) => ({
           ...prev,
           isLoading: false,
-          sessionStatus,
+          sessionStatus: finalStatus,
           timeRemaining: null,
         }));
       } catch (pollError) {
@@ -90,16 +98,18 @@ export const SandboxLauncher: React.FC = () => {
         throw pollError;
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      setState({
+      const errorMessage = error instanceof Error ? error.message : 'Failed to launch device';
+      setState((prev) => ({
+        ...prev,
         isLoading: false,
         error: errorMessage,
-        sessionId: null,
-        sessionStatus: null,
-        timeRemaining: null,
-      });
+      }));
     }
   }, []);
+
+  const handleRetry = useCallback(() => {
+    handleLaunch();
+  }, [handleLaunch]);
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -107,64 +117,45 @@ export const SandboxLauncher: React.FC = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Render component
   return (
     <div className="sandbox-launcher">
       <div className="launcher-card">
-        <h2>Android Emulator Launcher</h2>
+        <h2>Device Launcher</h2>
 
-        {!state.sessionId && (
-          <button
-            className="launch-button"
-            onClick={handleLaunch}
-            disabled={state.isLoading}
-          >
-            {state.isLoading ? 'Launching...' : 'Launch Emulator'}
-          </button>
-        )}
-
-        {state.error && (
-          <div className="error-message">
-            <strong>Error:</strong> {state.error}
+        {!state.sessionId && !state.isLoading && !state.error && (
+          <div className="controls">
+            <button onClick={() => handleLaunch('android')}>Launch Android</button>
+            <button onClick={() => handleLaunch('windows')}>Launch Windows</button>
           </div>
         )}
 
-        {state.sessionId && (
-          <div className="session-info">
+        {state.isLoading && (
+          <div className="loading">
+            <div className="spinner"></div>
             <p>
-              <strong>Session ID:</strong> <code>{state.sessionId}</code>
+              {state.timeRemaining ? `Launching... ${formatTime(state.timeRemaining)}` : 'Launching device...'}
             </p>
+          </div>
+        )}
 
-            {state.sessionStatus && (
-              <>
-                <p>
-                  <strong>Status:</strong>{' '}
-                  <span className={`status ${state.sessionStatus.status}`}>
-                    {state.sessionStatus.status.toUpperCase()}
-                  </span>
-                </p>
-                <p>
-                  <strong>Port:</strong> {state.sessionStatus.port}
-                </p>
-                {state.sessionStatus.uptime && (
-                  <p>
-                    <strong>Uptime:</strong> {state.sessionStatus.uptime}
-                  </p>
-                )}
-              </>
+        {state.error && (
+          <div className="error">
+            <p>{state.error}</p>
+            <button onClick={handleRetry}>Retry</button>
+          </div>
+        )}
+
+        {state.sessionStatus && (
+          <div className="session-info">
+            <h3>Session Active</h3>
+            <p><strong>ID:</strong> {state.sessionId}</p>
+            <p><strong>Status:</strong> {state.sessionStatus.status}</p>
+            {state.sessionStatus.port && (
+              <p><strong>Port:</strong> {state.sessionStatus.port}</p>
             )}
-
-            {state.isLoading && state.timeRemaining !== null && (
-              <div className="countdown">
-                <p>Estimated wait time: {formatTime(state.timeRemaining)}</p>
-                <div className="progress-bar">
-                  <div
-                    className="progress-fill"
-                    style={{
-                      width: `${((120 - state.timeRemaining) / 120) * 100}%`,
-                    }}
-                  />
-                </div>
-              </div>
+            {state.sessionStatus.uptime && (
+              <p><strong>Uptime:</strong> {state.sessionStatus.uptime}</p>
             )}
           </div>
         )}

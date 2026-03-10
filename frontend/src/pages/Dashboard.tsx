@@ -26,30 +26,11 @@ import AdvancedConfig from '../components/AdvancedConfig';
 import { DeviceConfig } from '../store/sessionStore';
 import { apiClient } from '../services/api';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { getDeploymentInfo } from '../config/api';
 
 function getLaunchErrorMessage(error: unknown): string {
-  if (axios.isAxiosError(error)) {
-    const apiMessage = (error.response?.data as { error?: string; message?: string } | undefined)?.message
-      || (error.response?.data as { error?: string; message?: string } | undefined)?.error;
-    if (apiMessage) {
-      return apiMessage;
-    }
-    if (!error.response) {
-      return 'Backend service unavailable. Please check configuration or try again later.';
-    }
-    if (error.code === 'ECONNABORTED') {
-      return 'Sandbox launch timed out. Please retry in a few seconds.';
-    }
-    if (error.response.status === 0 || error.message.toLowerCase().includes('cors')) {
-      return 'Unable to start the sandbox environment due to access policy. Please contact the administrator.';
-    }
-    return 'Unable to start the sandbox environment. Please try again or contact the administrator.';
-  }
-
-  const message = error instanceof Error ? error.message : '';
-  if (message.toLowerCase().includes('invalid api response')) {
-    return 'Unable to start the sandbox environment due to invalid backend response.';
+  if (error instanceof Error) {
+    return error.message;
   }
   return 'Unable to start the sandbox environment. Please try again or contact the administrator.';
 }
@@ -75,7 +56,7 @@ export default function Dashboard() {
   const [loadingStepIndex, setLoadingStepIndex] = useState(0);
   const [launchError, setLaunchError] = useState<string | null>(null);
   const [retryConfig, setRetryConfig] = useState<DeviceConfig | null>(null);
-  const [backendStatus, setBackendStatus] = useState<'checking' | 'online' | 'offline'>('checking');
+  const [backendStatus, setBackendStatus] = useState<'checking' | 'online' | 'offline' | 'misconfigured'>('checking');
   const [testUrl, setTestUrl] = useState('');
   const [uptimeDisplay, setUptimeDisplay] = useState(0);
   const [latencyDisplay, setLatencyDisplay] = useState(0);
@@ -101,11 +82,27 @@ export default function Dashboard() {
     let mounted = true;
 
     const pollHealth = async () => {
-      const ok = await apiClient.checkBackendHealth();
-      if (mounted) {
-        setBackendStatus(ok ? 'online' : 'offline');
+      try {
+        const health = await apiClient.checkBackendHealth();
+        if (mounted) {
+          if (health.isHealthy) {
+            setBackendStatus('online');
+          } else if (health.isConfigured) {
+            setBackendStatus('offline');
+          } else {
+            setBackendStatus('misconfigured');
+          }
+        }
+      } catch (error) {
+        if (mounted) {
+          setBackendStatus('offline');
+        }
       }
     };
+
+    if (import.meta.env.DEV) {
+      console.info('[Dashboard] Deployment info:', getDeploymentInfo());
+    }
 
     pollHealth();
     const interval = setInterval(pollHealth, 30000);
