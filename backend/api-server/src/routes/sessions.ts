@@ -1,16 +1,18 @@
 import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import Joi from 'joi';
-import { getPool } from '../database';
+import { getPool, isDatabaseAvailable } from '../database';
 import { getRedisClient } from '../redis';
 import { logger } from '../utils/logger';
 import { VMOrchestrator } from '../services/vmOrchestrator';
+import { memoryStore } from '../services/memoryStore';
 
 const router = Router();
 const vmOrchestrator = new VMOrchestrator();
 
 // Validation schemas
 const deviceConfigSchema = Joi.object({
+  // Required fields
   type: Joi.string().valid('android', 'windows').required(),
   version: Joi.string().required(),
   screenResolution: Joi.string().required(),
@@ -18,9 +20,22 @@ const deviceConfigSchema = Joi.object({
   cpu: Joi.string().required(),
   language: Joi.string().required(),
   sessionDuration: Joi.number().min(15).max(240).required(),
+  
+  // Optional fields for device configuration
+  orientation: Joi.string().valid('portrait', 'landscape').optional(),
+  deviceModel: Joi.string().optional(),
   networkSpeed: Joi.string().optional(),
+  performanceMode: Joi.string().valid('balanced', 'high-performance', 'battery-saver').optional(),
+  resetSandboxState: Joi.boolean().optional(),
+  
+  // Location settings (optional)
+  locationCity: Joi.string().optional(),
+  latitude: Joi.number().optional(),
+  longitude: Joi.number().optional(),
+  
+  // Custom URL for testing (optional)
   startUrl: Joi.string().uri().optional(),
-});
+}).unknown(true); // Allow additional unknown fields for forward compatibility
 
 // Create new session
 router.post('/', async (req, res) => {
@@ -39,13 +54,29 @@ router.post('/', async (req, res) => {
 
     logger.info(`[Sessions] Creating session ${sessionId} for ${value.type} device`);
 
-    // Store session in database
-    const pool = getPool();
-    await pool.query(
-      `INSERT INTO sessions (id, device_type, device_config, status, expires_at)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [sessionId, value.type, JSON.stringify(value), 'pending', expiresAt]
-    );
+    // Store session in database or memory
+    const useDatabase = isDatabaseAvailable();
+    
+    if (useDatabase) {
+      const pool = getPool();
+      await pool!.query(
+        `INSERT INTO sessions (id, device_type, device_config, status, expires_at)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [sessionId, value.type, JSON.stringify(value), 'pending', expiresAt]
+      );
+      logger.info(`[Sessions] Session ${sessionId} stored in database`);
+    } else {
+      await memoryStore.createSession({
+        id: sessionId,
+        device_type: value.type,
+        device_config: value,
+        status: 'pending',
+        created_at: new Date(),
+        expires_at: expiresAt,
+        updated_at: new Date(),
+      });
+      logger.info(`[Sessions] Session ${sessionId} stored in memory`);
+    }
 
     logger.info(`[Sessions] Session ${sessionId} record created, queueing VM creation`);
 
@@ -74,18 +105,28 @@ router.post('/', async (req, res) => {
 router.get('/:sessionId', async (req, res) => {
   try {
     const { sessionId } = req.params;
-    const pool = getPool();
+    const useDatabase = isDatabaseAvailable();
 
-    const result = await pool.query('SELECT * FROM sessions WHERE id = $1', [sessionId]);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Session not found' });
+    let session;
+    if (useDatabase) {
+      const pool = getPool();
+      const result = await pool!.query('SELECT * FROM sessions WHERE id = $1', [sessionId]);
+      
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Session not found' });
+      }
+      session = result.rows[0];
+    } else {
+      const memSession = await memoryStore.getSession(sessionId);
+      if (!memSession) {
+        return res.status(404).json({ error: 'Session not found' });
+      }
+      session = memSession;
     }
 
-    const session = result.rows[0];
     res.json({
       id: session.id,
-      deviceConfig: session.device_config,
+      deviceConfig: useDatabase ? session.device_config : session.device_config,
       status: session.status,
       vmId: session.vm_id,
       streamUrl: session.stream_url,
@@ -134,22 +175,36 @@ router.post('/:sessionId/extend', async (req, res) => {
       return res.status(400).json({ error: 'Invalid extension duration' });
     }
 
-    const pool = getPool();
-    const result = await pool.query(
-      `UPDATE sessions 
-       SET expires_at = expires_at + INTERVAL '${minutes} minutes',
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = $1
-       RETURNING expires_at`,
-      [sessionId]
-    );
+    const useDatabase = isDatabaseAvailable();
+    let expiresAt;
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Session not found' });
+    if (useDatabase) {
+      const pool = getPool();
+      const result = await pool!.query(
+        `UPDATE sessions 
+         SET expires_at = expires_at + INTERVAL '${minutes} minutes',
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = $1
+         RETURNING expires_at`,
+        [sessionId]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Session not found' });
+      }
+      expiresAt = result.rows[0].expires_at;
+    } else {
+      const session = await memoryStore.getSession(sessionId);
+      if (!session) {
+        return res.status(404).json({ error: 'Session not found' });
+      }
+      
+      expiresAt = new Date(session.expires_at.getTime() + minutes * 60 * 1000);
+      await memoryStore.updateSession(sessionId, { expires_at: expiresAt });
     }
 
     logger.info(`Session extended: ${sessionId} by ${minutes} minutes`);
-    res.json({ expiresAt: result.rows[0].expires_at });
+    res.json({ expiresAt });
   } catch (error) {
     logger.error('Error extending session:', error);
     res.status(500).json({ error: 'Failed to extend session' });
@@ -178,9 +233,14 @@ router.delete('/:sessionId', async (req, res) => {
     // Delete VM
     await vmOrchestrator.deleteVM(sessionId);
 
-    // Delete session from database
-    const pool = getPool();
-    await pool.query('DELETE FROM sessions WHERE id = $1', [sessionId]);
+    // Delete session from database or memory
+    const useDatabase = isDatabaseAvailable();
+    if (useDatabase) {
+      const pool = getPool();
+      await pool!.query('DELETE FROM sessions WHERE id = $1', [sessionId]);
+    } else {
+      await memoryStore.deleteSession(sessionId);
+    }
 
     logger.info(`Session ended: ${sessionId}`);
     res.json({ success: true });

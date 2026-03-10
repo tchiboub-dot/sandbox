@@ -2,6 +2,7 @@ import { Pool } from 'pg';
 import { logger } from './utils/logger';
 
 let pool: Pool | null = null;
+let dbAvailable = false;
 
 export async function initDatabase(): Promise<void> {
   pool = new Pool({
@@ -12,7 +13,11 @@ export async function initDatabase(): Promise<void> {
     password: process.env.DB_PASSWORD || 'postgres',
     max: 20,
     idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 5000, // Fail fast in mock mode
   });
+
+  // Test connection
+  await pool.query('SELECT NOW()');
 
   // Create tables if they don't exist
   await pool.query(`
@@ -42,12 +47,14 @@ export async function initDatabase(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_logs_timestamp ON system_logs(timestamp DESC);
   `);
 
+  dbAvailable = true;
   logger.info('Database tables initialized');
 }
 
-export function getPool(): Pool {
-  if (!pool) {
-    throw new Error('Database not initialized');
-  }
+export function getPool(): Pool | null {
   return pool;
+}
+
+export function isDatabaseAvailable(): boolean {
+  return dbAvailable;
 }

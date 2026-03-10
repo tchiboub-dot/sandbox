@@ -1,6 +1,7 @@
 import { Router } from 'express';
-import { getPool } from '../database';
+import { getPool, isDatabaseAvailable } from '../database';
 import { logger } from '../utils/logger';
+import { memoryStore } from '../services/memoryStore';
 import os from 'os';
 
 const router = Router();
@@ -8,22 +9,41 @@ const router = Router();
 // Get active sessions
 router.get('/sessions', async (req, res) => {
   try {
-    const pool = getPool();
-    const result = await pool.query(
-      `SELECT * FROM sessions 
-       WHERE status IN ('pending', 'starting', 'running')
-       ORDER BY created_at DESC`
-    );
+    const useDatabase = isDatabaseAvailable();
+    let sessions;
 
-    const sessions = result.rows.map((row: any) => ({
-      id: row.id,
-      deviceConfig: row.device_config,
-      status: row.status,
-      vmId: row.vm_id,
-      streamUrl: row.stream_url,
-      createdAt: row.created_at,
-      expiresAt: row.expires_at,
-    }));
+    if (useDatabase) {
+      const pool = getPool();
+      const result = await pool!.query(
+        `SELECT * FROM sessions 
+         WHERE status IN ('pending', 'starting', 'running')
+         ORDER BY created_at DESC`
+      );
+
+      sessions = result.rows.map((row: any) => ({
+        id: row.id,
+        deviceConfig: row.device_config,
+        status: row.status,
+        vmId: row.vm_id,
+        streamUrl: row.stream_url,
+        createdAt: row.created_at,
+        expiresAt: row.expires_at,
+      }));
+    } else {
+      const allSessions = await memoryStore.getAllSessions();
+      sessions = allSessions
+        .filter(s => ['pending', 'starting', 'running'].includes(s.status))
+        .map(row => ({
+          id: row.id,
+          deviceConfig: row.device_config,
+          status: row.status,
+          vmId: row.vm_id,
+          streamUrl: row.stream_url,
+          createdAt: row.created_at,
+          expiresAt: row.expires_at,
+        }))
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    }
 
     res.json(sessions);
   } catch (error) {
@@ -35,13 +55,19 @@ router.get('/sessions', async (req, res) => {
 // Get system statistics
 router.get('/stats', async (req, res) => {
   try {
-    const pool = getPool();
+    const useDatabase = isDatabaseAvailable();
+    let activeSessions = 0;
 
-    // Get active sessions count
-    const sessionsResult = await pool.query(
-      `SELECT COUNT(*) as count FROM sessions WHERE status IN ('pending', 'starting', 'running')`
-    );
-    const activeSessions = parseInt(sessionsResult.rows[0].count);
+    if (useDatabase) {
+      const pool = getPool();
+      const sessionsResult = await pool!.query(
+        `SELECT COUNT(*) as count FROM sessions WHERE status IN ('pending', 'starting', 'running')`
+      );
+      activeSessions = parseInt(sessionsResult.rows[0].count);
+    } else {
+      const stats = memoryStore.getStats();
+      activeSessions = stats.active + stats.pending;
+    }
 
     // Get system metrics
     const cpuUsage = Math.round(os.loadavg()[0] / os.cpus().length * 100);
@@ -95,9 +121,15 @@ router.get('/stats', async (req, res) => {
 router.get('/logs', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit as string) || 50;
-    const pool = getPool();
+    const useDatabase = isDatabaseAvailable();
 
-    const result = await pool.query(
+    if (!useDatabase) {
+      // Return empty logs in mock mode (could be enhanced with in-memory log buffer)
+      return res.json([]);
+    }
+
+    const pool = getPool();
+    const result = await pool!.query(
       `SELECT * FROM system_logs 
        ORDER BY timestamp DESC 
        LIMIT $1`,

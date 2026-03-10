@@ -82,18 +82,45 @@ app.use(errorHandler);
 
 // Initialize services
 async function startServer() {
-  try {
-    // Initialize database
-    await initDatabase();
-    logger.info('Database initialized');
+  const useMockMode = process.env.MOCK_SANDBOX !== 'false';
 
-    // Initialize Redis
-    await initRedis();
-    logger.info('Redis initialized');
+  try {
+    if (useMockMode) {
+      logger.info('🚀 Starting in DEMO/MOCK MODE (database and Redis optional)');
+      logger.info('   - Set MOCK_SANDBOX=false to use real services');
+      
+      // Try to initialize services but don't fail if unavailable
+      try {
+        await initDatabase();
+        logger.info('✓ Database connected');
+      } catch (dbError) {
+        logger.warn('⚠ Database unavailable - using in-memory storage');
+        logger.warn('  Sessions will not persist across restarts');
+      }
+
+      try {
+        await initRedis();
+        logger.info('✓ Redis connected');
+      } catch (redisError) {
+        logger.warn('⚠ Redis unavailable - rate limiting may not work optimally');
+      }
+    } else {
+      logger.info('Starting in PRODUCTION MODE (requires database and Redis)');
+      
+      // Initialize database (required)
+      await initDatabase();
+      logger.info('Database initialized');
+
+      // Initialize Redis (required)
+      await initRedis();
+      logger.info('Redis initialized');
+    }
 
     // Start server
     app.listen(port, () => {
-      logger.info(`API Server running on port ${port}`);
+      logger.info(`✓ API Server running on port ${port}`);
+      logger.info(`  Mode: ${useMockMode ? 'DEMO/MOCK' : 'PRODUCTION'}`);
+      logger.info(`  Health: http://localhost:${port}/health`);
     });
   } catch (error) {
     logger.error('Failed to start server:', error);

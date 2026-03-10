@@ -1,7 +1,8 @@
 import axios from 'axios';
-import { getPool } from '../database';
+import { getPool, isDatabaseAvailable } from '../database';
 import { logger } from '../utils/logger';
 import { mockSandbox } from './mockSandbox';
+import { memoryStore } from './memoryStore';
 
 interface DeviceConfig {
   type: 'android' | 'windows';
@@ -69,13 +70,22 @@ export class VMOrchestrator {
       }
 
       // Update session with VM details
-      const pool = getPool();
-      await pool.query(
-        `UPDATE sessions 
-         SET status = $1, vm_id = $2, stream_url = $3, updated_at = CURRENT_TIMESTAMP
-         WHERE id = $4`,
-        ['running', vmId, streamUrl, sessionId]
-      );
+      const useDatabase = isDatabaseAvailable();
+      if (useDatabase) {
+        const pool = getPool();
+        await pool!.query(
+          `UPDATE sessions 
+           SET status = $1, vm_id = $2, stream_url = $3, updated_at = CURRENT_TIMESTAMP
+           WHERE id = $4`,
+          ['running', vmId, streamUrl, sessionId]
+        );
+      } else {
+        await memoryStore.updateSession(sessionId, {
+          status: 'running',
+          vm_id: vmId,
+          stream_url: streamUrl,
+        });
+      }
 
       logger.info(`[VMOrchestrator] VM created successfully for session ${sessionId}: ${vmId}`);
       logger.info(`[VMOrchestrator] Stream URL: ${streamUrl}`);
@@ -287,21 +297,35 @@ export class VMOrchestrator {
   }
 
   private async updateSessionStatus(sessionId: string, status: string): Promise<void> {
-    const pool = getPool();
-    await pool.query(
-      `UPDATE sessions SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
-      [status, sessionId]
-    );
+    const useDatabase = isDatabaseAvailable();
+    if (useDatabase) {
+      const pool = getPool();
+      await pool!.query(
+        `UPDATE sessions SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
+        [status, sessionId]
+      );
+    } else {
+      await memoryStore.updateSession(sessionId, { status });
+    }
   }
 
   private async getSession(sessionId: string): Promise<any> {
-    const pool = getPool();
-    const result = await pool.query('SELECT * FROM sessions WHERE id = $1', [sessionId]);
+    const useDatabase = isDatabaseAvailable();
+    if (useDatabase) {
+      const pool = getPool();
+      const result = await pool!.query('SELECT * FROM sessions WHERE id = $1', [sessionId]);
+      
+      if (result.rows.length === 0) {
+        throw new Error('Session not found');
+      }
 
-    if (result.rows.length === 0) {
-      throw new Error('Session not found');
+      return result.rows[0];
+    } else {
+      const session = await memoryStore.getSession(sessionId);
+      if (!session) {
+        throw new Error('Session not found');
+      }
+      return session;
     }
-
-    return result.rows[0];
   }
 }
