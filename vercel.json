@@ -13,23 +13,40 @@
   },
   "routes": [
     {
-      "src": "/api/sandbox/launch",
+      "src": "^/api/sandbox/launch$",
       "dest": "/api/sandbox/launch.js",
       "methods": ["POST", "OPTIONS"]
     },
     {
-      "src": "/api/sandbox/session/(?<sessionId>[^/]+)",
+      "src": "^/api/sandbox/session/(?<sessionId>[^/]+)$",
       "dest": "/api/sandbox/session.js?sessionId=$sessionId",
       "methods": ["GET", "OPTIONS"]
     },
     {
-      "src": "/api/(.*)",
+      "src": "^/health$",
+      "methods": ["GET"],
       "status": 404
+    },
+    {
+      "src": "^/api(/.*)?$",
+      "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+      "status": 404
+    },
+    {
+      "src": "^/assets/(.*)$",
+      "dest": "/assets/$1"
+    },
+    {
+      "src": "^/(.*)\\.(?:js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)(?:\\?v=[0-9a-zA-Z\\-._~:/?#\\[\\]@!$&'()*+,;=]*)?$",
+      "dest": "/$1.$2",
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable"
+      }
     }
   ],
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "^/(?!api|assets|health|.*\\.(?:js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)(?:\\?|$))(.*)$",
       "destination": "/index.html"
     }
   ],
@@ -44,11 +61,11 @@
       ]
     },
     {
-      "source": "/health",
+      "source": "/index.html",
       "headers": [
         {
           "key": "Cache-Control",
-          "value": "no-cache, no-store, must-revalidate"
+          "value": "public, max-age=0, must-revalidate"
         }
       ]
     }
