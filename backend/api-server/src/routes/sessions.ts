@@ -25,13 +25,19 @@ const deviceConfigSchema = Joi.object({
 // Create new session
 router.post('/', async (req, res) => {
   try {
+    logger.info('[Sessions] Received session creation request');
+    logger.info(`[Sessions] Request body: ${JSON.stringify(req.body, null, 2)}`);
+
     const { error, value } = deviceConfigSchema.validate(req.body);
     if (error) {
+      logger.warn(`[Sessions] Validation error: ${error.details[0].message}`);
       return res.status(400).json({ error: error.details[0].message });
     }
 
     const sessionId = uuidv4();
     const expiresAt = new Date(Date.now() + value.sessionDuration * 60 * 1000);
+
+    logger.info(`[Sessions] Creating session ${sessionId} for ${value.type} device`);
 
     // Store session in database
     const pool = getPool();
@@ -41,15 +47,26 @@ router.post('/', async (req, res) => {
       [sessionId, value.type, JSON.stringify(value), 'pending', expiresAt]
     );
 
+    logger.info(`[Sessions] Session ${sessionId} record created, queueing VM creation`);
+
     // Queue VM creation
     await vmOrchestrator.createVM(sessionId, value);
 
-    logger.info(`Session created: ${sessionId}`);
+    logger.info(`[Sessions] Session ${sessionId} created successfully`);
 
     res.status(201).json({ sessionId });
   } catch (error) {
-    logger.error('Error creating session:', error);
-    res.status(500).json({ error: 'Failed to create session' });
+    logger.error('[Sessions] Error creating session:', error);
+    
+    // Provide detailed error response
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create session';
+    const statusCode = errorMessage.includes('Unable to connect') ? 503 : 500;
+    
+    res.status(statusCode).json({ 
+      error: 'Session creation failed',
+      message: errorMessage,
+      details: process.env.NODE_ENV === 'development' ? error : undefined
+    });
   }
 });
 

@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { getPool } from '../database';
 import { logger } from '../utils/logger';
+import { mockSandbox } from './mockSandbox';
 
 interface DeviceConfig {
   type: 'android' | 'windows';
@@ -15,34 +16,56 @@ interface DeviceConfig {
 
 export class VMOrchestrator {
   private vmHosts: string[];
+  private useMockMode: boolean;
 
   constructor() {
     // Load VM host pool from environment
     this.vmHosts = (process.env.VM_HOST_POOL || 'localhost:8080').split(',');
+    
+    // Enable mock mode for demo/development (default: true)
+    this.useMockMode = process.env.MOCK_SANDBOX !== 'false';
+    
+    if (this.useMockMode) {
+      logger.info('[VMOrchestrator] Mock sandbox mode enabled - sessions will be simulated');
+    } else {
+      logger.info(`[VMOrchestrator] Production mode - using VM hosts: ${this.vmHosts.join(', ')}`);
+    }
   }
 
   async createVM(sessionId: string, config: DeviceConfig): Promise<void> {
     try {
-      logger.info(`Creating VM for session ${sessionId}`);
+      logger.info(`[VMOrchestrator] Creating VM for session ${sessionId} (type: ${config.type})`);
 
       // Update session status
       await this.updateSessionStatus(sessionId, 'starting');
 
-      // Select available VM host
-      const vmHost = await this.selectVMHost();
-
-      // Create VM based on device type
       let vmId: string;
       let streamUrl: string;
 
-      if (config.type === 'android') {
-        const result = await this.createAndroidEmulator(vmHost, sessionId, config);
+      if (this.useMockMode) {
+        // Use mock sandbox engine
+        logger.info(`[VMOrchestrator] Using mock sandbox for session ${sessionId}`);
+        const result = await mockSandbox.createMockVM(sessionId, config);
         vmId = result.vmId;
         streamUrl = result.streamUrl;
       } else {
-        const result = await this.createWindowsVM(vmHost, sessionId, config);
-        vmId = result.vmId;
-        streamUrl = result.streamUrl;
+        // Use real VM infrastructure
+        logger.info(`[VMOrchestrator] Using production VM hosts for session ${sessionId}`);
+        
+        // Select available VM host
+        const vmHost = await this.selectVMHost();
+        logger.info(`[VMOrchestrator] Selected VM host: ${vmHost}`);
+
+        // Create VM based on device type
+        if (config.type === 'android') {
+          const result = await this.createAndroidEmulator(vmHost, sessionId, config);
+          vmId = result.vmId;
+          streamUrl = result.streamUrl;
+        } else {
+          const result = await this.createWindowsVM(vmHost, sessionId, config);
+          vmId = result.vmId;
+          streamUrl = result.streamUrl;
+        }
       }
 
       // Update session with VM details
@@ -54,10 +77,20 @@ export class VMOrchestrator {
         ['running', vmId, streamUrl, sessionId]
       );
 
-      logger.info(`VM created for session ${sessionId}: ${vmId}`);
+      logger.info(`[VMOrchestrator] VM created successfully for session ${sessionId}: ${vmId}`);
+      logger.info(`[VMOrchestrator] Stream URL: ${streamUrl}`);
     } catch (error) {
-      logger.error(`Failed to create VM for session ${sessionId}:`, error);
+      logger.error(`[VMOrchestrator] Failed to create VM for session ${sessionId}:`, error);
       await this.updateSessionStatus(sessionId, 'stopped');
+      
+      // Provide more detailed error message
+      if (axios.isAxiosError(error)) {
+        if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
+          throw new Error('Unable to connect to VM infrastructure. Please try again or contact support.');
+        }
+        throw new Error(`VM creation failed: ${error.message}`);
+      }
+      
       throw error;
     }
   }
@@ -120,11 +153,17 @@ export class VMOrchestrator {
       throw new Error('VM not found');
     }
 
-    const vmHost = await this.getVMHost(session.vm_id);
-    await axios.post(`http://${vmHost}/api/vm/${session.vm_id}/restart`);
+    logger.info(`[VMOrchestrator] Restarting VM for session ${sessionId}`);
+
+    if (this.useMockMode) {
+      await mockSandbox.restartMockVM(sessionId);
+    } else {
+      const vmHost = await this.getVMHost(session.vm_id);
+      await axios.post(`http://${vmHost}/api/vm/${session.vm_id}/restart`);
+    }
 
     await this.updateSessionStatus(sessionId, 'starting');
-    logger.info(`VM restarted: ${session.vm_id}`);
+    logger.info(`[VMOrchestrator] VM restarted: ${session.vm_id}`);
   }
 
   async resetVM(sessionId: string): Promise<void> {
@@ -133,24 +172,36 @@ export class VMOrchestrator {
       throw new Error('VM not found');
     }
 
-    const vmHost = await this.getVMHost(session.vm_id);
-    await axios.post(`http://${vmHost}/api/vm/${session.vm_id}/reset`);
+    logger.info(`[VMOrchestrator] Resetting VM for session ${sessionId}`);
+
+    if (this.useMockMode) {
+      await mockSandbox.resetMockVM(sessionId);
+    } else {
+      const vmHost = await this.getVMHost(session.vm_id);
+      await axios.post(`http://${vmHost}/api/vm/${session.vm_id}/reset`);
+    }
 
     await this.updateSessionStatus(sessionId, 'starting');
-    logger.info(`VM reset: ${session.vm_id}`);
+    logger.info(`[VMOrchestrator] VM reset: ${session.vm_id}`);
   }
 
   async deleteVM(sessionId: string): Promise<void> {
     const session = await this.getSession(sessionId);
     if (!session.vm_id) {
-      logger.warn(`No VM found for session ${sessionId}`);
+      logger.warn(`[VMOrchestrator] No VM found for session ${sessionId}`);
       return;
     }
 
-    const vmHost = await this.getVMHost(session.vm_id);
-    await axios.delete(`http://${vmHost}/api/vm/${session.vm_id}`);
+    logger.info(`[VMOrchestrator] Deleting VM for session ${sessionId}`);
 
-    logger.info(`VM deleted: ${session.vm_id}`);
+    if (this.useMockMode) {
+      await mockSandbox.deleteMockVM(sessionId);
+    } else {
+      const vmHost = await this.getVMHost(session.vm_id);
+      await axios.delete(`http://${vmHost}/api/vm/${session.vm_id}`);
+    }
+
+    logger.info(`[VMOrchestrator] VM deleted: ${session.vm_id}`);
   }
 
   async takeScreenshot(sessionId: string): Promise<Buffer> {
@@ -159,12 +210,17 @@ export class VMOrchestrator {
       throw new Error('VM not found');
     }
 
-    const vmHost = await this.getVMHost(session.vm_id);
-    const response = await axios.get(`http://${vmHost}/api/vm/${session.vm_id}/screenshot`, {
-      responseType: 'arraybuffer',
-    });
+    logger.info(`[VMOrchestrator] Taking screenshot for session ${sessionId}`);
 
-    return Buffer.from(response.data);
+    if (this.useMockMode) {
+      return await mockSandbox.takeMockScreenshot(sessionId);
+    } else {
+      const vmHost = await this.getVMHost(session.vm_id);
+      const response = await axios.get(`http://${vmHost}/api/vm/${session.vm_id}/screenshot`, {
+        responseType: 'arraybuffer',
+      });
+      return Buffer.from(response.data);
+    }
   }
 
   async sendPhoneAction(

@@ -15,7 +15,7 @@ router.get('/sessions', async (req, res) => {
        ORDER BY created_at DESC`
     );
 
-    const sessions = result.rows.map((row) => ({
+    const sessions = result.rows.map((row: any) => ({
       id: row.id,
       deviceConfig: row.device_config,
       status: row.status,
@@ -104,7 +104,7 @@ router.get('/logs', async (req, res) => {
       [limit]
     );
 
-    const logs = result.rows.map((row) => ({
+    const logs = result.rows.map((row: any) => ({
       timestamp: row.timestamp,
       level: row.level,
       message: row.message,
